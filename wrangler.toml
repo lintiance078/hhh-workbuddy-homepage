@@ -5,4 +5,4 @@ pages_build_output_dir = "public"
 [[d1_databases]]
 binding = "DB"
 database_name = "hhh-homepage-db"
-database_id = "REPLACE_WITH_YOUR_D1_ID"
+database_id = "97e4ed42-7716-4e03-b3c8-a2a558e0c809"
