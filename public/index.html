@@ -467,11 +467,13 @@ html[data-layout="wide"] .wrap{max-width:1080px}
   border:1px solid var(--line);border-radius:11px;padding:14px;text-align:center;
 }
 .qr-card .ph{
-  width:100%;aspect-ratio:1;border-radius:8px;background:var(--hover);
+  width:100%;min-height:150px;border-radius:8px;background:var(--hover);
   display:flex;align-items:center;justify-content:center;
   color:var(--muted);font-size:12.5px;margin-bottom:10px;overflow:hidden;
 }
-.qr-card .ph img{width:100%;height:100%;object-fit:contain;display:block}
+/* 收款码图自带白底和留白，直接铺满卡片，别让灰底透出来 */
+.qr-card .ph.has-qr{background:#fff;min-height:0;padding:0}
+.qr-card .ph img{width:100%;height:auto;object-fit:contain;display:block}
 .qr-card p{font-size:12.5px;color:var(--muted)}
 
 /* ========== 命令面板 ========== */
@@ -4314,9 +4316,19 @@ let editingLocalId = null;
 
 
 /* ═══════════ 赞赏码（有图就显示） ═══════════ */
+/* 把 weixin_qr.png / alipay_qr.png 放进 public/ 就会自动出现；
+   没有这两个文件时保留占位提示，不会报错。
+   图片加载成功后给容器加 .has-qr：去掉灰底和最小高度，让白底收款码铺满。 */
 [['weixin_qr.png','qrWxPh'],['alipay_qr.png','qrAliPh']].forEach(([src, id]) => {
+  const box = $('#' + id);
   const img = new Image();
-  img.onload = () => { $('#' + id).innerHTML = ''; $('#' + id).appendChild(img); };
+  img.alt = id === 'qrWxPh' ? '微信收款码' : '支付宝收款码';
+  img.onload = () => {
+    box.innerHTML = '';
+    box.appendChild(img);
+    box.classList.add('has-qr');
+  };
+  img.onerror = () => { /* 没图就保持占位提示 */ };
   img.src = src;
 });
 
