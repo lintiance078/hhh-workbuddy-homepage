@@ -2,6 +2,17 @@ name = "hhh-workbuddy-homepage"
 compatibility_date = "2024-10-04"
 pages_build_output_dir = "public"
 
+# ⚠️ 重要：一旦仓库里存在 wrangler.toml，Cloudflare 构建时会用它
+# 覆盖后台面板里配的「环境变量」和「D1 绑定」。
+# 所以这两样必须写在本文件里，光在后台点是不生效的。
+#
+# 改密码：改下面 ADMIN_PASSWORD 的值 → 提交 → 自动重新部署即生效。
+# 改了 SECRET 会让所有已登录设备的 token 立刻失效（相当于强制重新登录）。
+
+[vars]
+ADMIN_PASSWORD = "admin123456"
+SECRET = "ahPEQ0ZUYr3nLdKvXmT8wJcGfBs2iNhRa5oWy6pVq1e"
+
 [[d1_databases]]
 binding = "DB"
 database_name = "hhh-homepage-db"
