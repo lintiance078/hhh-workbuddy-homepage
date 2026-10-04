@@ -11,7 +11,7 @@ const DAY = 86400000;
 
 /* 取签名密钥：优先 SECRET 环境变量，否则用密码派生一个（保证"只配密码也能跑"） */
 function secretOf(env){
-  return (env && env.SECRET) || ('hhh::' + ((env && env.ADMIN_PASSWORD) || ''));
+  return (env && env.APP_SECRET) || ('hhh::' + ((env && env.ADMIN_PASSWORD) || ''));
 }
 
 function b64url(bytes){

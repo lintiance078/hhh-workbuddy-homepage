@@ -7,11 +7,11 @@ pages_build_output_dir = "public"
 # 所以这两样必须写在本文件里，光在后台点是不生效的。
 #
 # 改密码：改下面 ADMIN_PASSWORD 的值 → 提交 → 自动重新部署即生效。
-# 改了 SECRET 会让所有已登录设备的 token 立刻失效（相当于强制重新登录）。
+# 改了 APP_SECRET 会让所有已登录设备的 token 立刻失效（相当于强制重新登录）。
 
 [vars]
 ADMIN_PASSWORD = "admin123456"
-SECRET = "ahPEQ0ZUYr3nLdKvXmT8wJcGfBs2iNhRa5oWy6pVq1e"
+APP_SECRET = "ahPEQ0ZUYr3nLdKvXmT8wJcGfBs2iNhRa5oWy6pVq1e"
 
 [[d1_databases]]
 binding = "DB"
