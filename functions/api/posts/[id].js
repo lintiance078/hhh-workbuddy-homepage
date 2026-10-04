@@ -6,7 +6,10 @@
  * PATCH  —— 只改状态，{ status: 'draft'|'published'|'hidden' }（管理员）
  * DELETE —— 删除（管理员）
  */
-import { isAdmin, json } from './_auth.js';
+/* 注意路径：本文件在 /api/posts/ 子目录里，_auth.js 在上一层 /api/，
+   所以要写 '../_auth.js'。写成 './_auth.js' 本地 wrangler 会报
+   Could not resolve，构建直接失败。 */
+import { isAdmin, json } from '../_auth.js';
 
 const OK_STATUS = ['draft', 'published', 'hidden'];
 
