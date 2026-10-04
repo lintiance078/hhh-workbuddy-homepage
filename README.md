@@ -2,6 +2,11 @@
 
 林天策的个人主页 + 博客 + 工具箱，单页应用部署在 Cloudflare Pages 上。
 
+> **线上地址**：<https://hhh-workbuddy-homepage.pages.dev>
+> **代码仓库**：<https://github.com/lintiance078/hhh-workbuddy-homepage>
+>
+> 部署方式：往 `main` 分支推代码 → Cloudflare Pages 自动构建部署，约 1 分钟生效。
+
 - **访客**：只能看已发布的文章，看不到任何编辑入口
 - **管理员**：从页脚「建站天数」的神秘入口登录后可写、可改、可删
 - **断网/本地**：自动降级成本地模式，写的东西先存本机，联网登录后可以一键上传
@@ -87,9 +92,14 @@ Pages 项目 → **Settings → Environment variables**，加两个：
 | 变量名 | 值 | 说明 |
 |---|---|---|
 | `ADMIN_PASSWORD` | 你自己定的密码 | **必填**。登录用的密码 |
-| `SECRET` | 一串随机字符 | 选填。不填就用密码派生，填了更安全；**改了会导致已登录的 token 全部失效** |
+| `APP_SECRET` | 一串随机字符 | 选填。不填就用密码派生，填了更安全；**改了会导致已登录的 token 全部失效** |
 
-> ⚠️ 密码只存在这里，代码里一个字都没有。忘了密码就来这儿改。
+> ⚠️ 别用 `SECRET` 当变量名——那是 Cloudflare 的保留绑定名，会报
+> `Binding name 'SECRET' already in use`。
+>
+> ⚠️ **仓库里有 `wrangler.toml` 时，它会覆盖这里配的环境变量和 D1 绑定。**
+> 所以本项目的这两个变量写在 `wrangler.toml` 的 `[vars]` 段里，光在这儿点是不生效的。
+> 想改密码就改 `wrangler.toml` 里的 `ADMIN_PASSWORD`，提交后自动重新部署即生效。
 
 ### 7. 绑定 D1
 
@@ -146,7 +156,7 @@ Pages 项目 → **Settings → Functions → D1 database bindings**：
 | 项 | 做法 |
 |---|---|
 | 密码存放 | 只在 Cloudflare 环境变量，代码和前端都不含明文 |
-| 登录凭证 | HMAC-SHA256 签名 token，30 天过期，改 `SECRET` 可全部作废 |
+| 登录凭证 | HMAC-SHA256 签名 token，30 天过期，改 `APP_SECRET` 可全部作废 |
 | 密码比对 | 定长比较，不会因为"前几位对了"而变快 |
 | 暴力破解 | 同一 IP 15 分钟内错 8 次直接挡 |
 | 文章隔离 | 访客请求 `status != 'published'` 的文章一律返回 404，不暴露"有这篇但你没权限" |
@@ -178,7 +188,7 @@ wrangler pages dev public --d1=DB
 不用。token 存在 `localStorage`，30 天内有效。
 
 **Q：密码改了，已登录的设备会怎样？**
-`ADMIN_PASSWORD` 改了但 `SECRET` 没改的话，老 token 还能用到过期。想立刻全部踢掉，就把 `SECRET` 也换一个新的。
+`ADMIN_PASSWORD` 改了但 `APP_SECRET` 没改的话，老 token 还能用到过期（默认 30 天）。想立刻把所有人踢下线，就把 `APP_SECRET` 也换一个新的。
 
 **Q：本地草稿会丢吗？**
 存在浏览器 `localStorage` 里。**换电脑、清缓存、换浏览器都会没**。重要内容记得及时上传到线上。
