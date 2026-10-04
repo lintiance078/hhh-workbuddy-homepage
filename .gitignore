@@ -1,0 +1,22 @@
+# 依赖与构建产物
+node_modules/
+dist/
+.wrangler/
+
+# 系统文件
+.DS_Store
+Thumbs.db
+
+# 编辑器
+.vscode/
+.idea/
+
+# 本地环境变量（千万别提交）
+.dev.vars
+.env
+.env.local
+
+# 可选资源（有就放，没有也不影响）
+# public/avatar.png
+# public/weixin_qr.png
+# public/alipay_qr.png
