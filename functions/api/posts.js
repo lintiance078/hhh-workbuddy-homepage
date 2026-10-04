@@ -36,7 +36,7 @@ export async function onRequestGet({ request, env }){
 
   const sql = admin
     ? 'SELECT id, title, body, tags, status, created, updated FROM posts ORDER BY updated DESC'
-    : "SELECT id, title, body, tags, created, updated FROM posts WHERE status = 'published' ORDER BY updated DESC";
+    : "SELECT id, title, body, tags, status, created, updated FROM posts WHERE status = 'published' ORDER BY updated DESC";
 
   const { results } = await env.DB.prepare(sql).all();
   return json({

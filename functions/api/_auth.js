@@ -3,13 +3,13 @@
  * 设计取向：
  *   - 密码只存在环境变量 ADMIN_PASSWORD 里，代码里一个字都不留。
  *   - 登录成功发一张带签名的 token（HMAC-SHA256），前端存 localStorage。
- *   - token 里带过期时间，默认 30 天；密钥用 SECRET，没配就退回用密码本身派生。
+ *   - token 里带过期时间，默认 30 天；密钥用 APP_SECRET（用 SECRET 会被 Cloudflare 判为保留名），没配就退回用密码本身派生。
  *   - 不用 session 表：Pages Functions 是无状态的，签名 token 最省事也够用。
  */
 
 const DAY = 86400000;
 
-/* 取签名密钥：优先 SECRET 环境变量，否则用密码派生一个（保证"只配密码也能跑"） */
+/* 取签名密钥：优先 APP_SECRET 环境变量，否则用密码派生一个（保证"只配密码也能跑"） */
 function secretOf(env){
   return (env && env.APP_SECRET) || ('hhh::' + ((env && env.ADMIN_PASSWORD) || ''));
 }
