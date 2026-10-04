@@ -10,8 +10,8 @@ pages_build_output_dir = "public"
 # 改了 APP_SECRET 会让所有已登录设备的 token 立刻失效（相当于强制重新登录）。
 
 [vars]
-ADMIN_PASSWORD = "admin123456"
-APP_SECRET = "ahPEQ0ZUYr3nLdKvXmT8wJcGfBs2iNhRa5oWy6pVq1e"
+ADMIN_PASSWORD = "Lintianceωworkbuddy"
+APP_SECRET = "hR5N69vGn4JJ1F6EMeMipLYxC7x7MwVbGU5a1Dci"
 
 [[d1_databases]]
 binding = "DB"
