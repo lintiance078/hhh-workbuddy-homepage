@@ -238,6 +238,48 @@ html[data-layout="wide"] .wrap{max-width:1080px}
 .tl-item .d{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
 .tl-item p{font-size:13.5px;margin-top:1px}
 
+/* ═══ 折腾日志（原「最近在折腾」）═══
+   内容比原来长得多，塞在首页里会把页面撑到几屏高。
+   索性给它一个固定高度的滚动窗口：既看得到"确实在持续折腾"，
+   又不会把下面的卡片挤走。滚动条做细一点，别抢视线。 */
+.log-box{margin-top:14px}
+.log-head{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:4px}
+.log-head h3{margin-bottom:0}
+.log-sub{font-size:11.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+
+/* 滚动窗口：桌面 340px，手机矮一点。
+   overscroll-behavior 防止滚到底之后把整页一起带走（手机上特别烦）。 */
+.log-scroll{
+  max-height:340px;overflow-y:auto;overscroll-behavior:contain;
+  padding-right:6px;margin-top:8px;
+  /* 上下淡出，暗示"下面还有" */
+  -webkit-mask-image:linear-gradient(180deg,transparent 0,#000 10px,#000 calc(100% - 14px),transparent 100%);
+  mask-image:linear-gradient(180deg,transparent 0,#000 10px,#000 calc(100% - 14px),transparent 100%);
+}
+.log-scroll::-webkit-scrollbar{width:5px}
+.log-scroll::-webkit-scrollbar-thumb{background:var(--line);border-radius:3px}
+.log-scroll::-webkit-scrollbar-thumb:hover{background:var(--muted)}
+.log-scroll{scrollbar-width:thin;scrollbar-color:var(--line) transparent}
+
+/* 每条日志：日期 + 标题 + 正文 */
+.log-item{padding-bottom:15px;border-bottom:1px dashed var(--line);margin-bottom:15px}
+.log-item:last-child{border-bottom:none;margin-bottom:0;padding-bottom:2px}
+.log-date{
+  font-size:11.5px;color:var(--accent);letter-spacing:.3px;
+  font-variant-numeric:tabular-nums;font-weight:600;
+}
+.log-item h4{font-size:13.5px;margin:3px 0 5px;font-weight:700}
+.log-item p{font-size:13px;color:var(--muted);line-height:1.72;margin:0 0 5px}
+.log-item p:last-child{margin-bottom:0}
+/* 正文里的小标签：用来标"卡了多久""踩了几个坑"这种 */
+.log-tag{
+  display:inline-block;font-size:11px;padding:1px 7px;border-radius:20px;
+  background:var(--hover);color:var(--muted);margin:1px 4px 1px 0;
+  border:1px solid var(--line);
+}
+.log-tag.warn{color:var(--accent);border-color:var(--accent)}
+.log-foot{font-size:11.5px;color:var(--muted);margin-top:8px;text-align:center;opacity:.75}
+
 /* 通用块 */
 .box{border:1px solid var(--line);border-radius:11px;padding:16px;margin-top:14px}
 .box h3{font-size:14px;margin-bottom:8px}
@@ -1454,6 +1496,11 @@ body.cur-trail .trail-dot{display:block}
   .panel{padding:20px 18px 22px}
   .stats{grid-template-columns:repeat(2,1fr)}
   .qr-row{grid-template-columns:1fr}
+  /* 折腾日志：手机上窗口矮一点，不然一屏全被它占了，
+     下面的东西得滑半天才看见 */
+  .log-scroll{max-height:280px}
+  .log-item p{font-size:12.5px;line-height:1.7}
+  .log-item h4{font-size:13px}
   /* 窄屏也走 auto-fill 自动减列，卡片不会被拉大 */
   .tool-cards{grid-template-columns:repeat(auto-fill,minmax(130px,1fr))}
   .blog-cards.bv-grid{grid-template-columns:1fr}
@@ -1556,9 +1603,14 @@ body.cur-trail .trail-dot{display:block}
       <!-- 四宫格卡片：上左=动态（文章数） 上右=真实到访 下左=便签 下右=待办
            单击显示数量，双击跳到对应页面 -->
       <div class="stats" id="stats"></div>
-      <div class="box">
-        <h3>最近在折腾</h3>
-        <div class="timeline" id="timeline"></div>
+      <div class="box log-box">
+        <div class="log-head">
+          <h3>最近在折腾</h3>
+          <span class="log-sub" id="logSub"></span>
+        </div>
+        <div class="log-scroll" id="logScroll" tabindex="0" role="region" aria-label="折腾日志，可滚动">
+          <div id="timeline"></div>
+        </div>
       </div>
     </section>
 
@@ -2207,6 +2259,93 @@ const CONFIG = {
     { label: 'Telegram', url: '' }             // 不配置，自动隐藏
   ],
   slogan: ['喜欢折腾代码', '把小事做好', '正在写点什么'],
+  /* ═══ 折腾日志 ═══
+     给访客看的"这个站是怎么长出来的"。写法是有意口语化的：
+     记的是过程里真实卡住的地方，不是一串版本号。
+
+     ⚠️ 隐私红线：这里的内容**所有人可见**，绝不要写
+     密码 / token / 密钥名 / APP_SECRET / 数据库 ID / 后台地址 / 邮箱。
+     想写"改了配置"就写"改了配置"，别写改成什么。 */
+  log: [
+    {
+      date: '2026.10.05',
+      title: '把星际战甲的世界状态搬进工具箱',
+      tags: ['新功能', '踩坑 5 个'],
+      body: [
+        '一直想在手机上随时看一眼突击是什么、裂缝还有哪些。找了一圈接口，能用的没几个——好几个一请求就是 403，机房 IP 直接被拦在外面。最后挑中一个开源中文译名表 + 一个能跨域的世界状态源，把八个模块一次做齐：虚空裂缝、突击、平原昼夜、Baro、入侵、午夜电波、警报，还有 Darvo 特惠。',
+        '排版按"手机单列打底、越宽越加列"的思路做，三档断点。裂缝那张卡条目最多，横着排双栏之后高度从 1748px 压到 988px，终于不像一根长面条了。'
+      ]
+    },
+    {
+      date: '2026.10.05',
+      title: '搜不到东西的 bug，根子比想象得深',
+      tags: ['修 bug', '思路重构'],
+      body: [
+        '测试时发现搜「歼灭」和「钢铁」都是零结果，搜「希图斯」更怪——卡片出来了，里面一条内容也没有。',
+        '一开始以为是漏加关键词，查下去才发现老写法是"每个模块自己拼一个搜索用的字符串"。这个做法有三个死角：派系在数据里是英文，用户搜中文永远命中不了；「钢铁」是从一个布尔值来的，压根没有对应的英文可以拼进索引；而「白天 / 温暖」这种更是渲染那一刻才算出来的，数据里根本不存在。',
+        '干脆推翻重做：渲染每条内容时，把**真正会显示出去的文字**自动登记一遍，中文标签、状态词天生就能搜。顺手把宽屏裂缝右边的空白、手机上名字被挤成四行也一起收拾了。'
+      ]
+    },
+    {
+      date: '2026.10.05',
+      title: '为什么截图里那些字还是英文',
+      tags: ['翻译', '较真'],
+      body: [
+        '被问了一次「这些地方为什么没翻译」，回去翻代码才发现不是漏做，是匹配方式太死。手上那份官方中文表有九千多条，但它是**整句精确匹配**的——接口给的句子只要差一个介词、或者数字不一样，就一条都对不上。',
+        '比如同样是「在精英圣殿突袭里完成 8 个区域」，官方表收录的是另一个介词版本；「生存超过 20 分钟」这种，表里只有 30 分钟和 60 分钟的写法。',
+        '于是改成三级降级：先整句查，查不到就把长词组整块换掉，再不行才逐词拼。规矩是——三级下来一个词都没换成，就老实留着英文原句，不硬翻。硬翻出来的中文比英文更难懂。'
+      ]
+    },
+    {
+      date: '2026.10.05',
+      title: '游戏官方自己漏配的文案',
+      tags: ['翻译', '意外发现'],
+      body: [
+        '翻午夜电波的时候撞见几条诡异的东西，长得像「SeasonWeeklyCompleteRace」这样。查了半天确认不是我这边的解析出问题——是游戏方自己没配说明文案，接口就把内部代码原样甩出来了。',
+        '这种东西摆给用户看很莫名，所以加了一条判断：一串驼峰、或者带 unknown 字样的，就识别成内部代码，换成一句人话，原始代码降级成小字副标题——将来对不上时还能回头查。'
+      ]
+    },
+    {
+      date: '2026.10.05',
+      title: '一个自己没料到的安全疏漏',
+      tags: ['安全', '已修'],
+      body: [
+        '这个值得单独记一条。文章有三种状态：草稿、已隐藏、已发布，后两种普通访客看不到——但"看不到"只是显示层面的事。',
+        '实际排查时发现，访客身份的请求虽然被正确降级了，可那条查询语句**还是把正文全文取出来一并返回了**。也就是说没写完的草稿，内容其实是能被拿到的。修法是让访客那条分支的查询根本不取正文字段。',
+        '教训很直白：权限降级不能只改显示层，取数据的语句得跟着一起降。'
+      ]
+    },
+    {
+      date: '2026.10.04',
+      title: '部署这件事，比写代码耗时间',
+      tags: ['部署', '踩坑 5 个'],
+      body: [
+        '代码写完推上去，构建失败、接口 500，来回折腾了大半天。后来一个一个捋：子目录里的文件引用上一层的写法不对；绑定配置里填的是占位符；最隐蔽的一个是——仓库里只要放了配置文件，它就会**覆盖后台面板里配好的环境变量**，面板上看着都在，实际生效的全是文件里的那份。',
+        '还有一个更好笑的：某个绑定名被平台占用了，得换个名字才行。最后测试脚本请求被拦，是因为平台的反爬在查 User-Agent，脚本老老实实报上浏览器身份就通了。'
+      ]
+    },
+    {
+      date: '2026.10.04',
+      title: '从零开始：一个文件、一个博客、一个入口',
+      tags: ['起点'],
+      body: [
+        '最开始就一个要求——做成一个 html 文件、双击就能跑。于是整个前端就真的是一个文件，没有框架也没有构建步骤，改一行推一下就完事。代价是文件越来越大（现在已经三百多 KB），改的时候得小心别碰坏别处。',
+        '登录入口故意做得不像登录：页脚那个"已运行多少天"的数字，连点五下会亮一下，再点两下变成密码框。这样访客看不出这站能登录。文章分草稿 / 已隐藏 / 已发布三种状态，草稿箱那个标签页游客根本看不见。',
+        '还顺手加了双模式：连得上后端就走云端存文章，直接把文件拖进浏览器打开就自动降级，全部存本地，权限全开——自己改着玩的时候不用起服务。'
+      ]
+    },
+    {
+      date: '更早',
+      title: '之前这个站在干嘛',
+      tags: [],
+      body: [
+        '2026.09 —— 加上便签墙、待办清单和几个自用的小工具；',
+        '2026.08 —— 开始折腾个人主页，主题色、背景特效这些东西反复调了好几轮；',
+        '再往前 —— 收集一些自己用得上的小东西，慢慢攒成现在这个样子。'
+      ]
+    }
+  ],
+  /* 时间线（旧版首页简版，保留数据兼容） */
   timeline: [
     { date: '2026.10', text: '主页整合改版：关于+赞赏、便签+待办、工具箱' },
     { date: '2026.09', text: '加上待办、便签和翻译工具' },
@@ -2864,7 +3003,13 @@ const SETTINGS_SCHEMA = [
     { type:'area', label:'头像下那句标语（一行一句，轮播）', maxlength:200,
       placeholder:CONFIG.slogan.join('\n'),
       get:() => (profileStore.slogan || '').trim() || CONFIG.slogan.join('\n'),
-      set(v){ profileStore.slogan = v; store.set(PROFILE_KEY, profileStore); },
+      /* ⚠️ 这个字段会写进 profileStore，跟站名、简介是一家。
+         访客在线上模式下不能改——只读地显示当前内容就够了。 */
+      set(v){
+        if (!canEditProfile()){ toast('只有登录后才能改标语'); return; }
+        profileStore.slogan = v;
+        store.set(PROFILE_KEY, profileStore);
+      },
       after(){ sloganIdx = 0; rotateSlogan(); },
       hint:'一行一句，写多行会轮播，每 4 秒换一句。留空或删光就回到内置的默认标语。' },
     { type:'quote', label:'首页随机一句话' }
@@ -3819,7 +3964,7 @@ const AVATAR_LINES = [
   '别戳了，会秃',
   '再戳我要叫了啊',
   '这就是本人，如假包换',
-  '双击我，能改名字和简介',
+  '双击我，能改名字和简介（要先登录）',
   '瞧一瞧看一看，正版头像',
   '戳一下就够了，还挺痒的',
   '想换头像？把 avatar.png 丢到同目录就行',
@@ -3848,11 +3993,21 @@ $('#avatarWrap').addEventListener('dblclick', () => {
   avatarDbl = true;
   clearTimeout(avatarClickTimer);
   setTimeout(() => { avatarDbl = false; }, 400);
-  openProfile();
+  openProfile();                       /* 内部会再判一次权限，访客只得到一句提示 */
 });
 
 /* ---- 资料编辑弹窗 ---- */
+/* ⚠️ 改名和改简介都是"写入"，线上模式下必须先确认是管理员本人。
+   这里曾经漏了判断，导致访客双击头像就能改标题——现在统一拦在最前，
+   并且把双击提示文案一起收住，别让人白点一场。 */
+function canEditProfile(){
+  return !MODE.online || isAdminUser;
+}
 function openProfile(){
+  if (!canEditProfile()){
+    toast('只有登录后才能改名称和简介');
+    return;
+  }
   $('#pfName').value = getName();
   $('#pfAbout').value = getAbout();
   pfUpdatePreview();
@@ -3867,6 +4022,9 @@ function pfUpdatePreview(){
 $('#pfAbout').addEventListener('input', pfUpdatePreview);
 $('#pfName').addEventListener('keydown', e => { if (e.key === 'Enter') $('#pfSave').click(); });
 $('#pfSave').addEventListener('click', () => {
+  /* 第二道闸：就算有人绕过入口、直接把弹窗的 open 类糊上，
+     这里也不放行。写入永远要过权限判断。 */
+  if (!canEditProfile()){ toast('只有登录后才能改名称和简介'); return; }
   const name = $('#pfName').value.trim();
   const about = $('#pfAbout').value.trim();
   if (!name){ toast('网站名称不能空着'); $('#pfName').focus(); return; }
@@ -4221,10 +4379,39 @@ function renderFoot(){
 }
 renderFoot();
 
-/* ═══════════ 时间线 / 关于 ═══════════ */
-/* 配置虽然是自己写的，但统一走 escHtml：以后改 CONFIG 时手滑打了个引号也不会崩 */
-$('#timeline').innerHTML = CONFIG.timeline.map(t =>
-  '<div class="tl-item"><span class="d">' + escHtml(t.date) + '</span><p>' + escHtml(t.text) + '</p></div>').join('');
+/* ═══════════ 折腾日志 / 关于 ═══════════ */
+/* 日志渲染。每条 = 日期 + 标题 + 小标签 + 若干段正文。
+   全部走 escHtml：正文里哪天顺手打了引号也不会把整块结构崩掉。
+   有 tags 就渲染成小圆片，没 tags 的就干净一点，不占位置。 */
+function renderLog(){
+  const box = $('#timeline');
+  if (!box) return;
+  const list = CONFIG.log || [];
+
+  box.innerHTML = list.map(it => {
+    const tags = (it.tags || []).length
+      ? '<div style="margin:4px 0 5px">' + it.tags.map(t =>
+          '<span class="log-tag' + (/坑|bug|安全/i.test(t) ? ' warn' : '') + '">' +
+          escHtml(t) + '</span>').join('') + '</div>'
+      : '';
+    const paras = (it.body || []).map(p => '<p>' + escHtml(p) + '</p>').join('');
+    return '<div class="log-item">' +
+             '<div class="log-date">' + escHtml(it.date) + '</div>' +
+             '<h4>' + escHtml(it.title) + '</h4>' +
+             tags + paras +
+           '</div>';
+  }).join('');
+
+  /* 副标题报个总数，让人知道这窗口里装了多少条、能往下翻 */
+  const sub = $('#logSub');
+  if (sub) sub.textContent = list.length + ' 条 · 可以往下滚';
+
+  /* 先把滚动条归零，避免重绘后停在中间某个奇怪的位置 */
+  const sc = $('#logScroll');
+  if (sc) sc.scrollTop = 0;
+}
+renderLog();
+
 $('#aboutText').textContent = CONFIG.about;
 $('#contactText').textContent = '邮箱：' + CONFIG.emails.join(' / ');
 $('#contactBtns').innerHTML = CONFIG.contacts
