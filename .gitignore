@@ -16,6 +16,11 @@ Thumbs.db
 .env
 .env.local
 
+# 🔒 交接包：里面有明文 token 和密码，绝对不能推到公开仓库！
+#    这份东西只应该通过私密方式（网盘/压缩包私发）传给接手的人。
+.handover/
+config.env
+
 # 可选资源（有就放，没有也不影响）
 # public/avatar.png
 # public/weixin_qr.png
