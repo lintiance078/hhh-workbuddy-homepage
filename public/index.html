@@ -3967,9 +3967,12 @@ function renderBlogList(){
     const tagsHtml = (p.tags && p.tags.length)
       ? '<div class="pc-tags">' + p.tags.map(t => '<span class="pc-tag">' + escHtml(t) + '</span>').join('') + '</div>' : '';
     /* 编辑/删除带 need-admin：没登录时由 CSS 藏掉，不给任何可点的入口。
-       「分享」对所有人生效——但草稿/隐藏的文章点了会提示先发布，
-       （见 openShare 里的判断），所以这里统一显示，不加 need-admin。 */
-    const canShare = (p.status || 'published') === 'published';
+       「分享」对所有人生效，但有两个前提：
+         1. 文章得是 published（草稿/隐藏点开是 404，分享出去丢人）
+         2. 作者没关掉分享（shareable === false）
+       两个都满足才显示分享按钮。 */
+    const canShare = (p.status || 'published') === 'published'
+                     && p.shareable !== false;
     const actsHtml =
       '<div class="pc-acts"><button class="btn" data-act="read">阅读</button>' +
       (canShare ? '<button class="pc-share" data-act="share" title="分享这篇">' +
@@ -4271,6 +4274,11 @@ function openShare(id){
   const st = p.status || 'published';
   if (st !== 'published'){
     toast(st === 'draft' ? '这是草稿，先发布才能分享' : '这篇已隐藏，先发布才能分享');
+    return;
+  }
+  /* 作者关掉了分享：管理员自己还能看一眼链接，访客直接被劝退 */
+  if (p.shareable === false && !isAdminUser){
+    toast('作者关闭了这篇的分享');
     return;
   }
 
