@@ -461,6 +461,191 @@ html[data-layout="wide"] .wrap{max-width:1080px}
 }
 .color-field input:focus{border-color:var(--accent)}
 
+/* ========== 星际战甲 · 世界状态 ==========
+   布局思路：先按「手机单列」写基础样式，再用 min-width 往上加多列。
+   这样窄屏永远不会漏，宽屏才逐级增强。 */
+.ws-bar{
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  padding:9px 12px;margin-bottom:10px;
+  border:1px solid var(--line);border-radius:10px;background:var(--bg);
+  font-size:12px;
+}
+.ws-bar-l{display:flex;align-items:center;gap:7px;min-width:0;flex:1}
+.ws-bar-r{flex:none}
+.ws-dot{
+  width:7px;height:7px;border-radius:50%;flex:none;
+  background:var(--muted);transition:background .2s;
+}
+.ws-dot.live{background:#22c55e;box-shadow:0 0 0 3px rgba(34,197,94,.18)}
+.ws-dot.err{background:#ef4444;box-shadow:0 0 0 3px rgba(239,68,68,.18)}
+.ws-dot.load{background:#f59e0b;animation:wsPulse 1.1s ease-in-out infinite}
+@keyframes wsPulse{0%,100%{opacity:1}50%{opacity:.35}}
+.ws-bar-t{color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ws-refresh{padding:4px 12px;font-size:12px}
+
+/* 搜索框：手机占满，电脑限宽 */
+.ws-search{display:flex;gap:7px;margin-bottom:12px}
+.ws-search input{
+  flex:1;min-width:0;border:1px solid var(--line);background:var(--bg);
+  color:var(--text);padding:9px 12px;border-radius:9px;font-size:13px;
+  font-family:inherit;outline:none;
+}
+.ws-search input:focus{border-color:var(--accent)}
+.ws-search input::-webkit-search-cancel-button{display:none}
+.ws-clear{padding:4px 10px;font-size:12px;flex:none}
+
+.ws-body{display:grid;grid-template-columns:1fr;gap:10px}
+.ws-empty{
+  color:var(--muted);font-size:12.5px;text-align:center;
+  padding:26px 12px;line-height:1.7;
+}
+.ws-foot{
+  margin-top:14px;font-size:11px;color:var(--muted);opacity:.85;
+  line-height:1.65;text-align:center;
+}
+.ws-foot a{color:var(--accent);text-decoration:none}
+.ws-foot a:hover{text-decoration:underline}
+
+/* ---- 模块卡片 ---- */
+.ws-card{
+  border:1px solid var(--line);border-radius:12px;background:var(--card);
+  overflow:hidden;
+}
+.ws-head{
+  display:flex;align-items:center;gap:8px;padding:11px 13px;
+  cursor:pointer;user-select:none;background:var(--bg);
+  border-bottom:1px solid transparent;transition:border-color .15s;
+}
+.ws-card.open .ws-head{border-bottom-color:var(--line)}
+.ws-head:hover{background:var(--hover)}
+.ws-ico{font-size:15px;flex:none;line-height:1}
+.ws-title{font-size:13.5px;font-weight:600;flex:1;min-width:0;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ws-n{
+  font-size:10.5px;padding:1.5px 7px;border-radius:20px;flex:none;
+  background:rgba(var(--accent-rgb),.14);color:var(--accent);
+  border:1px solid rgba(var(--accent-rgb),.3);
+}
+.ws-n.zero{background:transparent;color:var(--muted);border-color:var(--line)}
+.ws-arrow{
+  font-size:10px;color:var(--muted);flex:none;transition:transform .18s;
+}
+.ws-card.open .ws-arrow{transform:rotate(90deg)}
+.ws-inner{padding:12px 13px 14px;display:none}
+.ws-card.open .ws-inner{display:block}
+
+/* ---- 条目行 ---- */
+.ws-item{
+  padding:9px 0;border-bottom:1px dashed var(--line);
+}
+.ws-item:last-child{border-bottom:none;padding-bottom:0}
+.ws-item:first-child{padding-top:0}
+.ws-row1{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.ws-name{font-size:13px;font-weight:500;color:var(--text)}
+.ws-en{font-size:10.5px;color:var(--muted);opacity:.75}
+.ws-row2{
+  display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+  margin-top:4px;font-size:11.5px;color:var(--muted);
+}
+.ws-chip{
+  font-size:10.5px;padding:1.5px 7px;border-radius:6px;
+  background:var(--bg);border:1px solid var(--line);color:var(--muted);
+}
+.ws-chip.hot{border-color:rgba(var(--accent-rgb),.4);color:var(--accent);
+  background:rgba(var(--accent-rgb),.08)}
+.ws-timer{
+  font-family:ui-monospace,Consolas,monospace;font-size:11.5px;
+  color:var(--accent);font-weight:600;flex:none;
+}
+.ws-timer.soon{color:#f59e0b}
+
+/* ---- 纪元分组头（裂缝用） ---- */
+.ws-tier{
+  display:flex;align-items:center;gap:8px;margin:12px 0 5px;
+  font-size:11.5px;color:var(--muted);font-weight:600;
+}
+.ws-tier:first-child{margin-top:0}
+.ws-tier::after{
+  content:'';flex:1;height:1px;background:var(--line);
+}
+.ws-tier b{color:var(--text);font-size:12px}
+
+/* ---- 进度条（入侵 / 巨人战舰） ---- */
+.ws-prog{
+  height:6px;border-radius:4px;background:var(--line);
+  overflow:hidden;margin:7px 0 5px;position:relative;
+}
+.ws-prog i{display:block;height:100%;border-radius:4px;
+  background:var(--accent);transition:width .4s}
+.ws-prog i.win{background:#22c55e}
+.ws-prog i.lose{background:#ef4444}
+.ws-prog-l{
+  display:flex;justify-content:space-between;gap:8px;
+  font-size:10.5px;color:var(--muted);
+}
+
+/* ---- 奖励列表 ---- */
+.ws-rew{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}
+.ws-rew span{
+  font-size:10.5px;padding:2px 7px;border-radius:6px;
+  background:var(--bg);border:1px solid var(--line);color:var(--muted);
+}
+.ws-rew span b{color:var(--text);font-weight:500}
+.ws-rew span em{color:var(--accent);font-style:normal;margin-left:3px}
+
+/* ---- 平原昼夜 ---- */
+.ws-cycle{display:flex;align-items:center;gap:10px;padding:8px 0}
+.ws-cycle:not(:last-child){border-bottom:1px dashed var(--line)}
+.ws-cycle-ico{font-size:19px;flex:none;line-height:1}
+.ws-cycle-b{flex:1;min-width:0}
+.ws-cycle-t{font-size:12.5px;font-weight:500}
+.ws-cycle-s{font-size:11px;color:var(--muted);margin-top:2px}
+
+/* ---- 搜索无结果 ---- */
+.ws-noresult{
+  grid-column:1/-1;text-align:center;color:var(--muted);
+  font-size:12.5px;padding:24px 12px;
+}
+
+/* ===== 宽屏增强：平板起两列，电脑三列 =====
+   关于 auto-placement 的坑：裂缝是长列表（wide），如果给它 span 2，
+   它左边那列会被顶下去，右边留一大块空白 —— 实测很难看。
+   所以宽屏下让「裂缝」独占一整行，剩下 7 张卡自动流进三列里。 */
+@media (min-width:768px){
+  .ws-body{grid-template-columns:repeat(2,1fr);align-items:start}
+  .ws-card.wide{grid-column:1/-1}
+  .ws-search{max-width:460px}
+}
+@media (min-width:1100px){
+  .ws-body{grid-template-columns:repeat(3,1fr)}
+  /* 独占一行，不用 span 2：span 2 会把它右边那格空出来 */
+  .ws-card.wide{grid-column:1/-1}
+  /* 裂缝太长，独占一行时用两栏排纪元分组，省一半高度 */
+  .ws-card.wide .ws-inner{
+    column-count:2;column-gap:22px;
+  }
+  .ws-card.wide .ws-tier{break-inside:avoid}
+  .ws-card.wide .ws-item{break-inside:avoid}
+}
+
+/* ===== 手机微调：触控目标加大、间距收紧 ===== */
+@media (max-width:560px){
+  .ws-head{padding:12px 12px}
+  .ws-item{padding:10px 0}
+  .ws-bar{padding:8px 10px}
+  .ws-foot{text-align:left}
+  /* 状态条在手机上太窄，文字会被省略号吃掉。
+     让整行变成两段式：上面一行放状态文字，刷新按钮独占下面一行。 */
+  .ws-bar{gap:8px}
+  .ws-bar-l{flex:1 1 100%}
+  .ws-bar-r{flex:1 1 100%}
+  .ws-refresh{width:100%;padding:7px 12px}
+  .ws-search{gap:6px}
+  .ws-cycle-ico{font-size:17px}
+  /* 纪元分组头在窄屏不换行，后面的人数挤到右边 */
+  .ws-tier{flex-wrap:nowrap}
+}
+
 /* ========== 赞赏（并入关于页） ========== */
 .qr-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}
 .qr-card{
@@ -1272,6 +1457,21 @@ body.cur-trail .trail-dot{display:block}
   /* 窄屏也走 auto-fill 自动减列，卡片不会被拉大 */
   .tool-cards{grid-template-columns:repeat(auto-fill,minmax(130px,1fr))}
   .blog-cards.bv-grid{grid-template-columns:1fr}
+  /* 头部在窄屏：头像和图标行挤掉名字的宽度，名字会一个词一行。
+     让头像缩小一点、名字允许换行但字号收小，读起来才顺。 */
+  .head{gap:12px}
+  .avatar-wrap{width:52px;height:52px}
+  .avatar{width:52px;height:52px;font-size:22px}
+  .head-info h1{font-size:19px;letter-spacing:0;line-height:1.25}
+  .slogan{font-size:12.5px}
+  .icon-btn{width:31px;height:31px;font-size:14px}
+  .icon-row{gap:5px}
+}
+@media (max-width:380px){
+  /* 再窄就把图标行换到下一行，别跟名字抢宽度 */
+  .head{flex-wrap:wrap}
+  .head-info{flex:1 1 auto}
+  .icon-row{flex:1 1 100%;justify-content:flex-end;margin-top:10px}
 }
 </style>
 </head>
@@ -1531,6 +1731,12 @@ body.cur-trail .trail-dot{display:block}
             <span class="tcard-ico">∑</span>
             <h4>文本统计</h4>
             <p>数字数、字节、行数，顺手去重去空行</p>
+          </button>
+          <button type="button" class="tcard" data-tool="worldstate">
+            <span class="tcard-go">→</span>
+            <span class="tcard-ico">🛰</span>
+            <h4>世界状态</h4>
+            <p>星际战甲实时情报：裂缝、突击、平原昼夜、虚空商人</p>
           </button>
         </div>
       </div>
@@ -1860,6 +2066,48 @@ body.cur-trail .trail-dot{display:block}
             <button class="btn" id="txtCopy">复制结果</button>
           </div>
         </div>
+      </div>
+
+      <!-- ============================================================
+           子界面：星际战甲 · 世界状态
+           ------------------------------------------------------------
+           数据来自两个公开接口（都支持跨域，前端可直连）：
+             · api.tenno.tools/worldstate/pc  —— 实时世界状态
+             · cdn.jsdelivr.net/gh/KingPrimes/DataSource/warframe/
+                 translation.json             —— 官方中文译名表
+           每次进这个工具都重新拉，不做缓存（主人明确要求）。
+           ============================================================ -->
+      <div class="tool-view" id="tool-worldstate" hidden>
+        <button type="button" class="btn tool-back" data-back="1">← 返回工具箱</button>
+
+        <!-- 顶部状态条：数据来源 / 更新时间 / 刷新 -->
+        <div class="ws-bar">
+          <div class="ws-bar-l">
+            <span class="ws-dot" id="wsDot"></span>
+            <span class="ws-bar-t" id="wsUpdated">还没加载</span>
+          </div>
+          <div class="ws-bar-r">
+            <button class="btn ws-refresh" id="wsRefresh">刷新</button>
+          </div>
+        </div>
+
+        <!-- 搜索框：本地过滤，中英关键词都能命中 -->
+        <div class="ws-search">
+          <input type="search" id="wsSearch" placeholder="搜裂缝、突击、希图斯、Axi…（中英文都行）" autocomplete="off">
+          <button class="btn ws-clear" id="wsClear" hidden>清空</button>
+        </div>
+
+        <div class="ws-body" id="wsBody">
+          <p class="ws-empty">正在拉取世界状态…</p>
+        </div>
+
+        <p class="ws-foot">
+          数据来自公开接口
+          <a href="https://docs.tenno.tools/api/" target="_blank" rel="noopener">tenno.tools</a>
+          · 中文译名来自
+          <a href="https://github.com/KingPrimes/DataSource" target="_blank" rel="noopener">KingPrimes/DataSource</a>
+          · 与 Digital Extremes 无关
+        </p>
       </div>
     </section>
 
@@ -2772,7 +3020,7 @@ document.querySelectorAll('.tab').forEach(t =>
   t.addEventListener('click', () => switchTab(t.dataset.tab)));
 
 /* ═══════════ 工具页：卡牌 → 子界面 ═══════════ */
-const TOOL_VIEWS = ['cipher','notes','todos','qrcode','codec','json','timestamp','color','text'];
+const TOOL_VIEWS = ['cipher','notes','todos','qrcode','codec','json','timestamp','color','text','worldstate'];
 function showTool(id){
   const home = $('#toolHome');
   if (home) home.style.display = id ? 'none' : '';
@@ -2780,11 +3028,591 @@ function showTool(id){
     const el = $('#tool-' + v);
     if (el) el.hidden = (v !== id);
   });
+  /* 进「世界状态」就拉一次最新数据（主人要求每次打开都是最新的） */
+  if (id === 'worldstate') wsLoad();
+  else wsStopTimers();
 }
 document.querySelectorAll('.tcard').forEach(c =>
   c.addEventListener('click', () => showTool(c.dataset.tool)));
 document.querySelectorAll('[data-back]').forEach(b =>
   b.addEventListener('click', () => showTool(null)));
+
+/* ═══════════════════════════════════════════════════════════════
+   星际战甲 · 世界状态
+   ---------------------------------------------------------------
+   数据源（两个都实测支持跨域，前端可直连）：
+     1) https://api.tenno.tools/worldstate/pc     —— 实时世界状态
+     2) jsDelivr 上的 KingPrimes/DataSource       —— 官方中文译名表
+   两个是并发拉的；中文表挂了不影响主数据（降级显示英文）。
+
+   ⚠️ 命名约定：翻译表里的 key 一律用小写英文，查的时候 toLowerCase()。
+   ═══════════════════════════════════════════════════════════════ */
+
+const WS_API = 'https://api.tenno.tools/worldstate/pc';
+const WS_ZH_URL = 'https://cdn.jsdelivr.net/gh/KingPrimes/DataSource/warframe/translation.json';
+/* 备用 CDN：主站被墙时自动切 */
+const WS_ZH_MIRRORS = [
+  WS_ZH_URL,
+  'https://jsd.onmicrosoft.cn/gh/KingPrimes/DataSource/warframe/translation.json',
+  'https://testingcf.jsdelivr.net/gh/KingPrimes/DataSource/warframe/translation.json',
+];
+
+/* ---- 中文对照表 ----
+   官方词条（translation.json）里查得到的，运行时从 CDN 补；
+   查不到的（派系名、Omnia、Baro 等）在下面这张小表里兜底。
+   ⚠️ Baro Ki'Teer 按主人要求保留英文，不翻。 */
+const WS_ZH_FALLBACK = {
+  // 平原昼夜的状态词（官方表里没有，搜索「白天」「温暖」得能命中）
+  'day': '白天', 'night': '夜晚', 'warm': '温暖', 'cold': '寒冷',
+  // 派系
+  'grineer': '克隆尼', 'corpus': '科普斯', 'infestation': '感染体',
+  'infested': '感染体', 'corrupted': '堕落者', 'murmur': '低语者',
+  'orokin': '奥罗金', 'sentient': '灵煞', 'narmer': '合一众',
+  'stalker': '死灵', 'tenno': '天诺',
+  // 纪元
+  'omnia': '全能',
+  // 地名
+  'höllvania': '霍瓦尼亚', 'hollvania': '霍瓦尼亚',
+  // 任务类型（官方词条里没有的）
+  'sortie': '突击', 'fissure': '虚空裂缝', 'invasion': '入侵',
+  'archon hunt': '执行官猎杀', 'steel path': '钢铁之路',
+  'nightmare': '噩梦', 'alert': '警报', 'nightwave': '午夜电波',
+  'void storm': '九重天', 'voidstorm': '九重天', 'skirmish': '前哨战',
+  'daily': '每日', 'weekly': '每周', 'steel': '钢铁', 'hard': '钢铁',
+  'sanctuary onslaught': '圣殿突袭', 'elite sanctuary onslaught': '精英圣殿突袭',
+  // 平原
+  'cetus': '希图斯', 'fortuna': '福尔图娜', 'necralisk': '殁世幽都',
+  'cambion drift': '魔胎之境', 'zariman': '扎里曼号',
+  'earth': '地球', 'venus': '金星', 'deimos': '火卫二',
+};
+
+/* 星球名：把接口的 "Sedna/Naga" 拆成 [星球, 节点] 分别翻 */
+const WS_PLANETS = {
+  'mercury': '水星', 'venus': '金星', 'earth': '地球', 'mars': '火星',
+  'phobos': '火卫一', 'deimos': '火卫二', 'ceres': '谷神星',
+  'jupiter': '木星', 'europa': '欧罗巴', 'saturn': '土星',
+  'uranus': '天王星', 'neptune': '海王星', 'pluto': '冥王星',
+  'sedna': '赛德娜', 'eris': '阋神星', 'void': '虚空', 'lua': '月球',
+  'kuva fortress': '赤毒要塞', 'zariman': '扎里曼号',
+  'h�llvania': '霍瓦尼亚', 'hollvania': '霍瓦尼亚',
+  'veil': '面纱比邻星域', 'neptune proxima': '海王星比邻星域',
+};
+
+let wsZn = {};            /* 运行时合并后的对照表 */
+let wsData = null;        /* 最近一次拿到的原始数据 */
+let wsTimers = [];        /* 所有倒计时定时器，切走工具时要清掉 */
+let wsLoading = false;
+
+/* 翻译：先查官方词条，再查本地兜底表，都没有就原样返回 */
+function wsT(s){
+  if (!s) return '';
+  const k = String(s).toLowerCase();
+  return wsZn[k] || WS_ZH_FALLBACK[k] || s;
+}
+/* 地点："Sedna/Naga" → 主标题「赛德娜 / 娜迦」+ 副标题「Sedna/Naga」 */
+function wsPlaceParts(loc){
+  if (!loc) return { cn: '', en: '' };
+  const i = loc.indexOf('/');
+  if (i < 0){
+    const cn = wsT(loc);
+    return { cn: cn, en: cn === loc ? '' : loc };
+  }
+  const sys = loc.slice(0, i), node = loc.slice(i + 1);
+  const sysCn = WS_PLANETS[sys.toLowerCase()] || sys;
+  const nodeCn = WS_ZH_FALLBACK[node.toLowerCase()] || wsZn[node.toLowerCase()];
+  return {
+    cn: nodeCn ? sysCn + ' / ' + nodeCn : sysCn,
+    en: loc,
+  };
+}
+/* 给需要单行字符串的地方用（比如搜索索引） */
+function wsPlace(loc){
+  const p = wsPlaceParts(loc);
+  return p.cn + (p.en ? '　' + p.en : '');
+}
+
+/* ---- 时间工具 ---- */
+function wsSec(t){ return typeof t === 'number' ? t : (t ? Date.parse(t) / 1000 : 0); }
+function wsFmtSec(sec){
+  if (sec <= 0) return '已结束';
+  const d = Math.floor(sec / 86400), h = Math.floor(sec % 86400 / 3600),
+        m = Math.floor(sec % 3600 / 60), s = Math.floor(sec % 60);
+  if (d > 0) return d + '天 ' + h + '小时';
+  if (h > 0) return h + '小时 ' + m + '分';
+  return m + '分 ' + s + '秒';
+}
+function wsFmtClock(ts){
+  const t = wsSec(ts);
+  if (!t) return '';
+  const d = new Date(t * 1000);
+  const p = n => String(n).padStart(2, '0');
+  return (d.getMonth() + 1) + '月' + d.getDate() + '日 ' + p(d.getHours()) + ':' + p(d.getMinutes());
+}
+
+/* ---- 网络 ---- */
+async function wsFetchJSON(url, timeout){
+  const ctl = new AbortController();
+  const timer = setTimeout(() => ctl.abort(), timeout || 15000);
+  try{
+    const r = await fetch(url, { signal: ctl.signal, cache: 'no-store' });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    return await r.json();
+  } finally { clearTimeout(timer); }
+}
+
+/* 中文表按顺序试镜像，第一个成功就用 */
+async function wsLoadZh(){
+  for (const u of WS_ZH_MIRRORS){
+    try{
+      const arr = await wsFetchJSON(u, 20000);
+      if (!Array.isArray(arr)) continue;
+      const m = {};
+      arr.forEach(it => {
+        const en = (it && it.en || '').trim().toLowerCase();
+        const cn = (it && it.cn || '').trim();
+        if (en && cn && !m[en]) m[en] = cn;
+      });
+      if (Object.keys(m).length < 100) continue;
+      wsZn = m;
+      return true;
+    }catch(e){ /* 换下一个镜像 */ }
+  }
+  return false;
+}
+
+/* ═══ 主流程 ═══ */
+async function wsLoad(force){
+  if (wsLoading) return;
+  wsLoading = true;
+  wsStopTimers();
+
+  const dot = $('#wsDot'), tEl = $('#wsUpdated'), body = $('#wsBody');
+  if (dot){ dot.className = 'ws-dot load'; }
+  if (tEl) tEl.textContent = '正在拉取…';
+  if (body && !wsData) body.innerHTML = '<p class="ws-empty">正在拉取世界状态…</p>';
+
+  try{
+    /* 中文表只在第一次拉；主数据每次都拉最新 */
+    const needZh = Object.keys(wsZn).length === 0;
+    const jobs = [wsFetchJSON(WS_API, 20000)];
+    if (needZh) jobs.push(wsLoadZh());
+
+    const [data, zhOk] = await Promise.all(jobs);
+    if (!data || !data.time){
+      throw new Error('返回的数据不完整');
+    }
+    wsData = data;
+    wsZhOk = needZh ? !!zhOk : wsZhOk;
+
+    if (dot) dot.className = 'ws-dot live';
+    if (tEl){
+      tEl.textContent = '更新于 ' + wsFmtClock(data.time) +
+        (wsZhOk ? '　·　中文译名已加载' : '　·　中文译名未加载，显示原文');
+    }
+    wsRender();
+  }catch(err){
+    if (dot) dot.className = 'ws-dot err';
+    if (tEl) tEl.textContent = '拉取失败：' + (err.message || err);
+    if (body && !wsData){
+      body.innerHTML = '<p class="ws-empty">世界状态没拉到 😢<br>' +
+        escHtml(err.message || String(err)) +
+        '<br><br>可能是网络问题，点上面的「刷新」再试一次。</p>';
+    } else if (wsData){
+      toast('刷新失败，还显示上次的数据');
+    }
+  }finally{
+    wsLoading = false;
+  }
+}
+let wsZhOk = false;
+
+/* ═══ 渲染 ═══ */
+const WS_MODULES = [
+  { key:'fissure',   ico:'🌀', title:'虚空裂缝',   wide:true },
+  { key:'sortie',    ico:'🎯', title:'突击任务' },
+  { key:'cycle',     ico:'🌗', title:'平原昼夜' },
+  { key:'voidtrader',ico:'🛒', title:"Baro Ki'Teer" },
+  { key:'invasion',  ico:'⚔️', title:'入侵进度' },
+  { key:'nightwave', ico:'📻', title:'午夜电波' },
+  { key:'alert',     ico:'🔔', title:'警报任务' },
+  { key:'misc',      ico:'🧩', title:'其他' },
+];
+
+function wsRender(){
+  const wrap = $('#wsBody');
+  if (!wrap || !wsData) return;
+  const kw = ($('#wsSearch') && $('#wsSearch').value || '').trim().toLowerCase();
+
+  const html = WS_MODULES.map(m => wsCardHtml(m, kw)).filter(Boolean).join('');
+  wrap.innerHTML = html || '<p class="ws-noresult">没有匹配的条目</p>';
+
+  /* 默认展开前两个（裂缝、突击）——最常看的 */
+  ['fissure','sortie'].forEach(k => {
+    const c = wrap.querySelector('.ws-card[data-k="' + k + '"]');
+    if (c) c.classList.add('open');
+  });
+
+  /* 折叠交互：点标题栏展开/收起 */
+  wrap.querySelectorAll('.ws-card .ws-head').forEach(h => {
+    h.addEventListener('click', () => h.parentElement.classList.toggle('open'));
+  });
+
+  wsStartTimers();
+}
+
+/* 每个模块的卡片外壳 + 内容 */
+/* 搜索命中判定：对「整行要显示出去的文字」做匹配。
+   为什么不匹配原始字段？因为原始字段是英文（faction=Grineer），
+   用户搜「克隆尼」时根本命中不了；反过来 chip 里的「钢铁」也没有对应的英文源。
+   所以 WS_FILTER 在渲染每个条目时把「实际会显示的文字」收集起来，最后统一判一次。 */
+let WS_FILTER = null;
+
+function wsCardHtml(m, kw){
+  WS_FILTER = kw ? { kw, hit: false } : null;
+  const inner = wsModuleBody(m.key);
+  if (!inner) return '';                       /* 没数据 -> 整张卡不出现 */
+  const matched = WS_FILTER ? WS_FILTER.hit : false;
+  WS_FILTER = null;
+  /* 搜索时：这张卡一条都没命中就整张藏起来，不出空壳。 */
+  if (kw && !matched) return '';
+  const n = inner.count;
+  const zero = n === 0 ? ' zero' : '';
+  return '<div class="ws-card' + (m.wide ? ' wide' : '') + '" data-k="' + m.key + '">' +
+    '<div class="ws-head">' +
+      '<span class="ws-ico">' + m.ico + '</span>' +
+      '<span class="ws-title">' + escHtml(m.title) + '</span>' +
+      '<span class="ws-n' + zero + '">' + n + '</span>' +
+      '<span class="ws-arrow">▶</span>' +
+    '</div>' +
+    '<div class="ws-inner">' + inner.html + '</div>' +
+  '</div>';
+}
+
+/* 一条数据两行：第一行名字（中文大 + 英文小），第二行标签/倒计时 */
+function wsItem(name, en, chips, timer, timerSoon){
+  /* 搜索索引：名字 + 英文 + 所有标签文字 + 格式化的倒计时 */
+  wsMark(name);
+  wsMark(en);
+  (chips || []).forEach(c => { if (c) wsMark(c[0]); });
+  if (timer) wsMark(wsFmtSec(wsSec(timer) - Math.floor(Date.now() / 1000)));
+  let h = '<div class="ws-item"><div class="ws-row1">' +
+    '<span class="ws-name">' + escHtml(name) + '</span>';
+  if (en && en !== name) h += '<span class="ws-en">' + escHtml(en) + '</span>';
+  h += '</div>';
+  if ((chips && chips.length) || timer){
+    h += '<div class="ws-row2">';
+    (chips || []).forEach(c => {
+      if (!c || !c[0]) return;
+      h += '<span class="ws-chip' + (c[2] ? ' hot' : '') + '">' + escHtml(c[0]) + '</span>';
+    });
+    if (timer) h += '<span class="ws-timer' + (timerSoon ? ' soon' : '') +
+      '" data-end="' + timer + '">--:--</span>';
+    h += '</div>';
+  }
+  return h + '</div>';
+}
+/* 给当前搜索串喂一段「会显示出去的文字」 */
+function wsMark(s){
+  if (!WS_FILTER || WS_FILTER.hit || !s) return;
+  if (String(s).toLowerCase().indexOf(WS_FILTER.kw) >= 0) WS_FILTER.hit = true;
+}
+/* 非 wsItem 的自定义条目（平原昼夜 / 入侵 / 九重天）走这个收集关键字 */
+function wsMarkRaw(s){ wsMark(s); }
+
+/* 传入 location 字符串的便捷版：自动拆中英 */
+function wsItemPlace(loc, chips, timer, timerSoon){
+  const p = wsPlaceParts(loc);
+  return wsItem(p.cn, p.en, chips, timer, timerSoon);
+}
+
+/* ---- 各模块内容 ----
+   搜索不再在这里过滤：这里只负责把「该显示的东西」吐出来，
+   wsItem / wsMarkRaw 在生成的同时就把文字喂给 WS_FILTER，
+   最后由 wsCardHtml 看这一整张卡有没有命中。
+   好处：中文标签（钢铁/每日/温暖）天生就能搜，不用手工维护索引串。 */
+function wsModuleBody(key){
+  const d = wsData || {};
+  let html = '', count = 0;
+
+  if (key === 'fissure'){
+    const arr = (d.fissures && d.fissures.data) || [];
+    count = arr.length;
+    /* 按纪元分组：古纪→前纪→中纪→后纪→安魂→全能 */
+    const order = ['Lith','Meso','Neo','Axi','Requiem','Omnia'];
+    const byTier = {};
+    arr.forEach(f => {
+      const t = f.tier || '其他';
+      (byTier[t] = byTier[t] || []).push(f);
+    });
+    order.concat(Object.keys(byTier).filter(t => order.indexOf(t) < 0))
+      .forEach(t => {
+        const list = byTier[t];
+        if (!list || !list.length) return;
+        const cn = wsT(t);
+        /* 纪元分组头也要进搜索索引（搜「后纪」得把整组带出来） */
+        wsMarkRaw(cn); wsMarkRaw(t);
+        html += '<div class="ws-tier"><b>' + escHtml(cn) + '</b>' +
+          (cn === t ? '' : '<span style="opacity:.7;font-weight:400">' + escHtml(t) + '</span>') +
+          '<span style="margin-left:auto;opacity:.7">' + list.length + ' 个</span></div>';
+        list.sort((a, b) => wsSec(a.end) - wsSec(b.end)).forEach(f => {
+          const chips = [[wsT(f.missionType), '', false]];
+          if (f.hard) chips.push(['钢铁', '', true]);
+          chips.push([wsT(f.faction), '', false]);
+          html += wsItemPlace(f.location, chips, wsSec(f.end), false);
+        });
+      });
+  }
+
+  else if (key === 'sortie'){
+    const arr = (d.sorties && d.sorties.data) || [];
+    count = arr.length;
+    arr.forEach(s => {
+      /* 字段实测：{ missionType, modifier, location }
+         modifier 是"武器限制/辐射灾害"这类任务条件文字，不是等级，别当等级解析。 */
+      const jobs = s.missions || s.variants || [];
+      if (jobs.length){
+        jobs.forEach((j, i) => {
+          const mt = wsT(j.missionType || j.type);
+          const place = wsPlaceParts(j.location || j.node);
+          const chips = [[place.cn], [mt]];
+          if (j.modifier) chips.push([j.modifier]);
+          html += wsItem('第 ' + (i + 1) + ' 关　' + mt, j.missionType || j.type,
+            chips, i === 0 ? wsSec(s.end) : 0);
+        });
+      }
+      /* 突击首领。bossName 本身就是英文专名，不加副标题免得重复。 */
+      html += wsItem('突击首领　' + wsT(s.bossName), '',
+        [[wsT(s.faction) + ' 阵营'], ['共 ' + jobs.length + ' 关']],
+        jobs.length ? 0 : wsSec(s.end));
+      /* 奖励池（只列前 8 个，免得刷屏） */
+      const pool = [];
+      (s.rewards || []).forEach(r => {
+        (Array.isArray(r) ? r : [r]).forEach(x => {
+          if (x && x.name) pool.push(x);
+        });
+      });
+      if (pool.length){
+        html += '<div class="ws-rew">' + pool.slice(0, 10).map(x => {
+          const nm = wsT(x.name);
+          wsMarkRaw(nm);
+          const pct = x.chance ? (x.chance * 100).toFixed(2) + '%' : '';
+          return '<span><b>' + escHtml(nm) + '</b>' + (pct ? '<em>' + pct + '</em>' : '') + '</span>';
+        }).join('') + '</div>';
+      }
+    });
+  }
+
+  else if (key === 'cycle'){
+    const arr = (d.daynight && d.daynight.data) || [];
+    count = arr.length;
+    const LABEL = { cetus: ['希图斯 · 夜灵平野', 'Cetus'], fortuna: ['福尔图娜 · 奥布山谷', 'Fortuna'],
+                    earth: ['地球', 'Earth'], cambion: ['殁世幽都 · 魔胎之境', 'Cambion Drift'],
+                    zariman: ['扎里曼号', 'Zariman'], duviri: ['双衍王境', 'Duviri'] };
+    arr.forEach(c => {
+      const L = LABEL[c.id] || [c.id, c.id];
+      /* 算当前处于白天还是夜晚 */
+      const now = Math.floor(Date.now() / 1000);
+      const el = now - wsSec(c.start);
+      const p = c.length > 0 ? (el % c.length) : 0;
+      const isDay = p >= (c.dayStart || 0) && p < (c.dayEnd || c.length);
+      const status = L[0].indexOf('福尔图娜') >= 0
+        ? (isDay ? '温暖' : '寒冷') : (isDay ? '白天' : '夜晚');
+      const ico = isDay ? '☀️' : '🌙';
+      /* 距离下次切换还剩多久 */
+      let left;
+      if (isDay) left = (c.dayEnd || c.length) - p;
+      else left = (c.length - p) + (c.dayStart || 0);
+      wsMarkRaw(L[0]); wsMarkRaw(L[1]); wsMarkRaw(status);
+      html += '<div class="ws-cycle">' +
+        '<span class="ws-cycle-ico">' + ico + '</span>' +
+        '<div class="ws-cycle-b">' +
+          '<div class="ws-cycle-t">' + escHtml(L[0]) + '　<em style="font-style:normal;color:var(--accent)">' + status + '</em></div>' +
+          '<div class="ws-cycle-s">' + escHtml(L[1]) + '　·　' +
+            (isDay ? '距天黑' : '距天亮') + ' <span class="ws-timer" data-end="' +
+            Math.floor(now + left) + '">--:--</span></div>' +
+        '</div></div>';
+    });
+  }
+
+  else if (key === 'voidtrader'){
+    const arr = (d.voidtraders && d.voidtraders.data) || [];
+    count = arr.length;
+    arr.forEach(v => {
+      const now = Math.floor(Date.now() / 1000);
+      const active = v.active || (now >= wsSec(v.start) && now < wsSec(v.end));
+      const place = wsPlaceParts(v.location);
+      /* Baro Ki'Teer 按主人要求保留英文，不翻 */
+      const chips = [[active ? '已到达' : '未到达', '', active],
+                     [place.cn, place.en],
+                     [(active ? '离开' : '到达') + '　' + wsFmtClock(active ? v.end : v.start)]];
+      wsMarkRaw('虚空商人');
+      html += wsItem("Baro Ki'Teer", v.name || '', chips,
+        active ? wsSec(v.end) : wsSec(v.start));
+    });
+  }
+
+  else if (key === 'invasion'){
+    const arr = (d.invasions && d.invasions.data) || [];
+    count = arr.length;
+    arr.forEach(v => {
+      const loc = v.location || '';
+      const score = v.score || 0, goal = v.endScore || Math.abs(score) * 2 || 1;
+      const pct = Math.min(100, Math.round(Math.abs(score) / goal * 100));
+      const win = score > 0;
+      const p = wsPlaceParts(loc);
+      const atk = v.attacker && (v.attacker.faction || v.attacker);
+      const def = v.defender && (v.defender.faction || v.defender);
+      wsMarkRaw(p.cn); wsMarkRaw(p.en);
+      wsMarkRaw(win ? '进攻方领先' : '防守方领先');
+      wsMarkRaw(wsT(atk)); wsMarkRaw(wsT(def)); wsMarkRaw('入侵');
+      html += '<div class="ws-item">' +
+        '<div class="ws-row1"><span class="ws-name">' + escHtml(p.cn) + '</span>' +
+          (p.en ? '<span class="ws-en">' + escHtml(p.en) + '</span>' : '') + '</div>' +
+        '<div class="ws-prog"><i class="' + (win ? 'win' : 'lose') + '" style="width:' + pct + '%"></i></div>' +
+        '<div class="ws-prog-l">' +
+          '<span>' + (win ? '进攻方领先' : '防守方领先') + '</span>' +
+          '<span>' + pct + '%　' + Math.abs(score).toLocaleString() + ' / ' + goal.toLocaleString() + '</span>' +
+        '</div></div>';
+    });
+  }
+
+  else if (key === 'nightwave'){
+    const arr = (d.challenges && d.challenges.data) || [];
+    count = arr.length;
+    arr.forEach(se => {
+      (se.challenges || []).forEach(c => {
+        const desc = (c.description || c.title || '').trim();
+        /* 官方表里"挑战说明"也是按英文原文索引的，能查到就显示中文。
+           实测命中率约一半，查不到就保持英文，不硬翻。 */
+        const cn = wsZn[desc.toLowerCase()];
+        const isPlaceholder = /^unknown challenge/i.test(desc);
+        const show = isPlaceholder ? desc : (cn || desc);
+        html += wsItem(show, cn && cn !== desc ? desc : '', [
+          [c.daily ? '每日' : '每周', '', c.daily],
+          [String(c.xpAmount || 0) + ' 声望'],
+        ], wsSec(c.end));
+      });
+    });
+  }
+
+  else if (key === 'alert'){
+    const arr = (d.alerts && d.alerts.data) || [];
+    count = arr.length;
+    arr.forEach(a => {
+      const loc = a.location || '';
+      const chips = [[wsT(a.missionType)], [wsT(a.faction)]];
+      if (a.minLevel) chips.push([a.minLevel + '-' + a.maxLevel + ' 级']);
+      const items = (a.rewards && a.rewards.items) || [];
+      let h = wsItemPlace(loc, chips, wsSec(a.end));
+      wsMarkRaw('警报');
+      if (items.length || (a.rewards && a.rewards.credits)){
+        h += '<div class="ws-rew">';
+        if (a.rewards.credits){ wsMarkRaw('现金'); h += '<span><b>' + a.rewards.credits.toLocaleString() + '</b> 现金</span>'; }
+        items.forEach(it => { wsMarkRaw(wsT(it.name)); h += '<span><b>' + escHtml(wsT(it.name)) + '</b></span>'; });
+        h += '</div>';
+      }
+      html += h;
+    });
+  }
+
+  else if (key === 'misc'){
+    /* Darvo 特惠 + 巨人战舰 + 九重天 + 新闻，塞一张卡里 */
+    const parts = [];
+    const dd = (d.dailydeals && d.dailydeals.data) || [];
+    if (dd.length){
+      count += dd.length;
+      dd.forEach(x => {
+        const nm = x.item && x.item.name || '';
+        const off = x.originalPrice ? Math.round((1 - x.price / x.originalPrice) * 100) : 0;
+        wsMarkRaw('特惠'); wsMarkRaw('库存');
+        parts.push(wsItem('Darvo 每日特惠　' + wsT(nm), nm,
+          [['-' + off + '%', '', true], [x.price + ' 白金'],
+           ['库存 ' + (x.stock || 0) - (x.sold || 0)]], wsSec(x.end)));
+      });
+    }
+    const fp = (d.factionprojects && d.factionprojects.data) || [];
+    fp.forEach(p => {
+      count++;
+      const nm = p.type || '';
+      const pct = Math.min(100, Math.round(p.progress || 0));
+      wsMarkRaw(wsT(nm)); wsMarkRaw(nm); wsMarkRaw('全服进度');
+      parts.push('<div class="ws-item"><div class="ws-row1">' +
+        '<span class="ws-name">' + escHtml(wsT(nm)) + '</span>' +
+        '<span class="ws-en">' + escHtml(nm) + '</span></div>' +
+        '<div class="ws-prog"><i style="width:' + pct + '%"></i></div>' +
+        '<div class="ws-prog-l"><span>全服进度</span><span>' + pct + '%</span></div></div>');
+    });
+    const vs = (d.voidstorms && d.voidstorms.data) || [];
+    if (vs.length){
+      count += vs.length;
+      /* 九重天裂缝：同一批的 end 时间往往相同，按结束时间排序后依次显示 */
+      vs.slice().sort((a, b) => wsSec(a.end) - wsSec(b.end)).slice(0, 6).forEach(v => {
+        const loc = v.location || '';
+        const p = wsPlaceParts(loc);
+        /* 名字里已经带了地点，就不再传 en，否则会重复一行 */
+        parts.push(wsItem('九重天 · ' + p.cn, '',
+          [[wsT(v.tier) + ' 纪元'], [wsT(v.missionType)]], wsSec(v.end)));
+      });
+    }
+    html = parts.join('');
+  }
+
+  if (!count && !html) return null;
+  return { html: html || '<p class="ws-empty">这一项现在没有活动</p>', count };
+}
+
+/* ---- 倒计时：每秒刷新所有 [data-end] ---- */
+function wsStartTimers(){
+  wsStopTimers();
+  const tick = () => {
+    const now = Math.floor(Date.now() / 1000);
+    document.querySelectorAll('#wsBody .ws-timer[data-end]').forEach(el => {
+      const end = parseInt(el.dataset.end, 10);
+      if (!end) { el.textContent = ''; return; }
+      const left = end - now;
+      el.textContent = wsFmtSec(left);
+      el.classList.toggle('soon', left > 0 && left < 300);
+      if (left <= 0) el.textContent = '已结束';
+    });
+  };
+  tick();
+  wsTimers.push(setInterval(tick, 1000));
+}
+function wsStopTimers(){
+  wsTimers.forEach(clearInterval);
+  wsTimers = [];
+}
+
+/* ---- 世界状态：事件绑定 ---- */
+(function(){
+  const rf = $('#wsRefresh');
+  if (rf) rf.addEventListener('click', () => wsLoad(true));
+  const sb = $('#wsSearch');
+  if (sb){
+    let t = null;
+    sb.addEventListener('input', () => {
+      clearTimeout(t);
+      t = setTimeout(() => {
+        const cl = $('#wsClear');
+        if (cl) cl.hidden = !sb.value;
+        /* 搜索时把折叠全部打开，否则藏在里面的都看不见 */
+        if (wsData){
+          wsRender();
+          const kw = sb.value.trim();
+          if (kw){
+            document.querySelectorAll('#wsBody .ws-card').forEach(c => c.classList.add('open'));
+          }
+        }
+      }, 180);
+    });
+  }
+  const cl = $('#wsClear');
+  if (cl) cl.addEventListener('click', () => {
+    const sb2 = $('#wsSearch');
+    if (sb2){ sb2.value = ''; sb2.focus(); cl.hidden = true; }
+    if (wsData) wsRender();
+  });
+})();
 
 /* ═══════════ 头部内容 ═══════════ */
 /* 名称、简介、标语都可以被主人改：存在 localStorage，改了优先用存的那份 */
