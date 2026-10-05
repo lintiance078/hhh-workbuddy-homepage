@@ -20,6 +20,8 @@ function rowToPost(r){
     body: r.body,
     tags: r.tags ? r.tags.split(',').filter(Boolean) : [],
     status: r.status,
+    pinned: !!r.pinned,
+    shareable: r.shareable === undefined || r.shareable === null ? true : !!r.shareable,
     created: r.created,
     updated: r.updated
   };
@@ -55,39 +57,69 @@ export async function onRequestPut({ request, env, params }){
   if (!text)  return json({ ok: false, error: '正文不能空' }, 400);
 
   const status = OK_STATUS.includes(body.status) ? body.status : 'draft';
+  const pinned = body.pinned ? 1 : 0;
+  const shareable = body.shareable === false ? 0 : 1;
   const now = Date.now();
 
   const res = await env.DB.prepare(
-    'UPDATE posts SET title = ?, body = ?, tags = ?, status = ?, updated = ? WHERE id = ?'
-  ).bind(title, text, normTags(body.tags), status, now, params.id).run();
+    'UPDATE posts SET title = ?, body = ?, tags = ?, status = ?, pinned = ?, shareable = ?, updated = ? WHERE id = ?'
+  ).bind(title, text, normTags(body.tags), status, pinned, shareable, now, params.id).run();
 
   if (!res.meta || res.meta.changes === 0){
     return json({ ok: false, error: '文章不存在' }, 404);
   }
-  return json({ ok: true, id: params.id, updated: now, status });
+  return json({ ok: true, id: params.id, updated: now, status, pinned: !!pinned, shareable: !!shareable });
 }
 
-/* 只改状态：草稿箱里「发布」「隐藏」「退回草稿」走这里 */
+/* 局部更新：状态、置顶、可分享，谁传了就改谁。
+   草稿箱里「发布」「隐藏」「退回草稿」、阅读页「置顶」「关闭分享」都走这里。 */
 export async function onRequestPatch({ request, env, params }){
   if (!await isAdmin(request, env)) return json({ ok: false, error: '没登录，不能改' }, 401);
 
   let body = {};
   try{ body = await request.json(); }catch(e){}
 
-  const status = body && body.status;
-  if (!OK_STATUS.includes(status)){
-    return json({ ok: false, error: '状态只能是 draft / published / hidden' }, 400);
+  const sets = [];
+  const vals = [];
+
+  if (body && body.status !== undefined){
+    if (!OK_STATUS.includes(body.status)){
+      return json({ ok: false, error: '状态只能是 draft / published / hidden' }, 400);
+    }
+    sets.push('status = ?');
+    vals.push(body.status);
+  }
+
+  if (body && body.pinned !== undefined){
+    sets.push('pinned = ?');
+    vals.push(body.pinned ? 1 : 0);
+  }
+
+  if (body && body.shareable !== undefined){
+    sets.push('shareable = ?');
+    vals.push(body.shareable ? 1 : 0);
+  }
+
+  if (!sets.length){
+    return json({ ok: false, error: '没有要改的字段（status / pinned / shareable）' }, 400);
   }
 
   const now = Date.now();
+  sets.push('updated = ?');
+  vals.push(now);
+  vals.push(params.id);
+
   const res = await env.DB.prepare(
-    'UPDATE posts SET status = ?, updated = ? WHERE id = ?'
-  ).bind(status, now, params.id).run();
+    'UPDATE posts SET ' + sets.join(', ') + ' WHERE id = ?'
+  ).bind(...vals).run();
 
   if (!res.meta || res.meta.changes === 0){
     return json({ ok: false, error: '文章不存在' }, 404);
   }
-  return json({ ok: true, id: params.id, status, updated: now });
+
+  /* 把改完的完整状态回给前端，省得它再拉一次 */
+  const row = await env.DB.prepare('SELECT * FROM posts WHERE id = ?').bind(params.id).first();
+  return json({ ok: true, id: params.id, updated: now, post: row ? rowToPost(row) : null });
 }
 
 export async function onRequestDelete({ request, env, params }){

@@ -635,9 +635,13 @@ body.is-admin .need-admin{display:revert!important}
 .st-draft{background:rgba(230,170,60,.16);color:#b8860b;border:1px solid rgba(230,170,60,.4)}
 .st-hidden{background:rgba(140,140,140,.14);color:var(--muted);border:1px solid var(--line)}
 .st-published{background:rgba(60,170,110,.14);color:#2e8b57;border:1px solid rgba(60,170,110,.35)}
+/* 置顶徽章：用主色调，跟状态角标区分开 */
+.st-pinned{background:rgba(var(--accent-rgb),.16);color:var(--accent);border:1px solid rgba(var(--accent-rgb),.38)}
 html[data-theme="dark"] .st-draft{color:#e0b355}
 html[data-theme="dark"] .st-hidden{color:#aaa}
 html[data-theme="dark"] .st-published{color:#6fce9b}
+/* 置顶卡：左侧一道主色竖条，扫一眼就知道这篇在最前面 */
+.post-card.is-pinned{box-shadow:inset 3px 0 0 var(--accent)}
 
 /* 草稿箱：线上 / 本地 上下两块 */
 .db-sec{margin-bottom:22px}
@@ -796,6 +800,17 @@ body.fx-cursor .cursor-dot,body.fx-cursor .cursor-ring{display:block}
   transform:translateY(10px) scale(.98);transition:transform .2s ease;
 }
 .settings-mask.open .settings-modal{transform:none}
+
+/* 从调色板按钮跳进来时，外观那一组闪一下，告诉人"就在这儿" */
+details.flash{
+  border-radius:10px;
+  animation:grpFlash 1.4s ease;
+}
+@keyframes grpFlash{
+  0%   {box-shadow:0 0 0 0 rgba(var(--accent-rgb),.55);background:rgba(var(--accent-rgb),.10)}
+  70%  {box-shadow:0 0 0 6px rgba(var(--accent-rgb),0);  background:rgba(var(--accent-rgb),.06)}
+  100% {box-shadow:0 0 0 0 rgba(var(--accent-rgb),0);    background:transparent}
+}
 .sm-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
 .sm-head h3{font-size:15px;font-weight:600}
 .sm-body details{border-top:1px solid var(--line-soft)}
@@ -1391,6 +1406,8 @@ body.cur-trail .trail-dot{display:block}
           <div class="btn-row" style="margin:0">
             <span id="vStatus" class="ed-status"></span>
             <button class="btn" id="vShare">分享</button>
+            <button class="btn need-admin" id="vPin">置顶</button>
+            <button class="btn need-admin" id="vShareToggle">关闭分享</button>
             <button class="btn need-admin" id="vToDraft">转草稿</button>
             <button class="btn need-admin" id="vToHidden">隐藏</button>
             <button class="btn need-admin" id="vToPub">发布</button>
@@ -2051,12 +2068,12 @@ PALETTES.forEach(p => {
   b.addEventListener('click', () => setAccent(p.id, true));
   pop.appendChild(b);
 });
+/* 调色板按钮：功能已经并进「设置 → 外观布局」，
+   这里不再弹小面板，改成打开设置弹窗并定位到外观那一组。
+   （原来的 palette-pop 弹层保留在 DOM 里没删，但不再被打开。） */
 $('#paletteBtn').addEventListener('click', e => {
   e.stopPropagation();
-  pop.classList.toggle('open');
-});
-document.addEventListener('click', e => {
-  if (!pop.contains(e.target)) pop.classList.remove('open');
+  openSettings('appearance');
 });
 $('#themeBtn').addEventListener('click', () =>
   setTheme(root.dataset.theme === 'dark' ? 'light' : 'dark'));
@@ -2610,6 +2627,7 @@ function buildSettings(){
   smBody.innerHTML = '';
   SETTINGS_SCHEMA.forEach(g => {
     const det = document.createElement('details');
+    det.dataset.group = g.id;        /* 供 openSettings(groupId) 定位用 */
     if (g.open) det.open = true;
     const sum = document.createElement('summary');
     sum.textContent = g.title;
@@ -2683,9 +2701,25 @@ $('#perfFix').addEventListener('click', () => {
 });
 
 /* 弹窗开关 */
-function openSettings(){
+/* 打开设置弹窗。
+   传 groupId 时（比如从调色板按钮进来）会把那一组展开并滚到眼前，
+   顺便加一圈高亮闪一下，让人知道"是这里"。 */
+function openSettings(groupId){
   fxMask.classList.add('open');
   syncSettings();
+  if (groupId){
+    const det = smBody.querySelector('details[data-group="' + groupId + '"]');
+    if (det){
+      /* 先把别的组收起来，视线更集中 */
+      smBody.querySelectorAll('details').forEach(d => { if (d !== det) d.open = false; });
+      det.open = true;
+      det.classList.remove('flash');
+      void det.offsetWidth;          /* 强制重排，让动画能重播 */
+      det.classList.add('flash');
+      setTimeout(() => det.scrollIntoView({ block: 'start', behavior: 'smooth' }), 60);
+      setTimeout(() => det.classList.remove('flash'), 1500);
+    }
+  }
 }
 function closeSettings(){ fxMask.classList.remove('open'); }
 $('#fxBtn').addEventListener('click', e => {
@@ -3644,7 +3678,8 @@ async function persistPost(p){
         method: 'POST',
         body: JSON.stringify({
           id: p.id, title: p.title, body: p.body, tags: p.tags,
-          status: p.status, created: p.created, updated: p.updated
+          status: p.status, created: p.created, updated: p.updated,
+          pinned: !!p.pinned, shareable: p.shareable !== false
         })
       });
       return { where: 'cloud', saved: data.saved && data.saved[0] };
@@ -3687,6 +3722,23 @@ async function setPostStatus(id, status){
   }
   const p = posts.find(x => x.id === id);
   if (p){ p.status = status; p.updated = Date.now(); }
+}
+
+/* 改置顶 / 可分享开关。跟 setPostStatus 一样：线上走后端，本地只改内存。
+   flags 形如 { pinned: true } 或 { shareable: false }，可以一起传。 */
+async function setPostFlag(id, flags){
+  if (MODE.online && isAdminUser){
+    const data = await api('/api/posts/' + encodeURIComponent(id), {
+      method: 'PATCH',
+      body: JSON.stringify(flags)
+    });
+    /* 后端回传了最新对象，直接覆盖本地副本，省得再拉一次列表 */
+    const i = posts.findIndex(x => x.id === id);
+    if (i >= 0 && data && data.post) posts[i] = Object.assign(posts[i], data.post);
+    return;
+  }
+  const p = posts.find(x => x.id === id);
+  if (p) Object.assign(p, flags, { updated: Date.now() });
 }
 
 /* ═══════════ 博客：文章发布 + 在线编辑器 ═══════════ */
@@ -3889,7 +3941,9 @@ function statusBadge(p){
   const s = p.status || 'published';
   const map = { draft: ['st-draft', '草稿'], hidden: ['st-hidden', '已隐藏'], published: ['st-published', '已发布'] };
   const pair = map[s] || map.published;
-  return '<span class="pc-status ' + pair[0] + '">' + pair[1] + '</span>';
+  /* 置顶徽章：排在状态后面，谁都能看见（访客也要知道这篇是置顶的） */
+  const pin = p.pinned ? '<span class="pc-status st-pinned">置顶</span>' : '';
+  return pin + '<span class="pc-status ' + pair[0] + '">' + pair[1] + '</span>';
 }
 
 /* ---- 列表 / 网格 / 瀑布流：三种模式结构各不相同 ---- */
@@ -3901,9 +3955,12 @@ function renderBlogList(){
   /* 访客只看到已发布的；登录后看全部（含草稿、隐藏） */
   const visible = isAdminUser ? posts : posts.filter(p => (p.status || 'published') === 'published');
 
-  visible.slice().sort((a, b) => (b.updated || 0) - (a.updated || 0)).forEach((p, idx) => {
+  /* 排序：置顶的永远在最前面，同组内按更新时间倒序 */
+  visible.slice().sort((a, b) =>
+    ((b.pinned ? 1 : 0) - (a.pinned ? 1 : 0)) || ((b.updated || 0) - (a.updated || 0))
+  ).forEach((p, idx) => {
     const card = document.createElement('div');
-    card.className = 'post-card';
+    card.className = 'post-card' + (p.pinned ? ' is-pinned' : '');
     const plain = String(p.body || '').replace(/^@steam\s+\S+.*$/gm, '').replace(/[#>*`~\[\]()!-]/g, '');
     const ex = plain.replace(/\s+/g, ' ').trim().slice(0, 90);
     const date = fmtPostDate(p.updated || p.created);
@@ -4285,16 +4342,75 @@ function openPost(id){
   $('#vTitle').textContent = p.title;
   $('#vMeta').textContent = fmtPostDate(p.updated || p.created) +
     (p.tags && p.tags.length ? ' · ' + p.tags.join(' / ') : '');
+
   const st = $('#vStatus');
   if (st){
     const s = p.status || 'published';
-    st.textContent = isAdminUser
-      ? ({ draft: '当前：草稿（别人看不到）', hidden: '当前：已隐藏（别人看不到）', published: '当前：已发布' }[s] || '')
-      : '';
+    const bits = [];
+    if (isAdminUser){
+      bits.push({ draft: '草稿（别人看不到）', hidden: '已隐藏（别人看不到）', published: '已发布' }[s] || '');
+      if (p.pinned) bits.push('已置顶');
+      if (p.shareable === false) bits.push('分享已关闭');
+    }
+    st.textContent = bits.filter(Boolean).join(' · ');
   }
+
+  /* 置顶按钮：文字随当前状态变，点了就切 */
+  const pinBtn = $('#vPin');
+  if (pinBtn){
+    pinBtn.textContent = p.pinned ? '取消置顶' : '置顶';
+    pinBtn.title = p.pinned ? '取消置顶，回到按时间排序' : '置顶这篇，让它排在列表最前面';
+  }
+
+  /* 分享开关按钮：这是「这篇文章能不能被分享」，
+     跟旁边那个「分享」按钮（分享给别人）不是一回事。 */
+  const shBtn = $('#vShareToggle');
+  if (shBtn){
+    const on = p.shareable !== false;
+    shBtn.textContent = on ? '关闭分享' : '开放分享';
+    shBtn.title = on ? '关掉后这篇不显示分享按钮' : '重新允许分享这篇';
+  }
+
+  /* 分享按钮本身：文章被设成不可分享时，管理员仍看得到但点不了（方便改回来），
+     访客直接不给看到。 */
+  const shareBtn = $('#vShare');
+  if (shareBtn){
+    const on = p.shareable !== false;
+    shareBtn.style.display = (on || isAdminUser) ? '' : 'none';
+    shareBtn.disabled = !on;
+    shareBtn.style.opacity = on ? '' : '.45';
+    shareBtn.title = on ? '分享这篇文章' : '作者关闭了这篇的分享';
+  }
+
   $('#vBody').innerHTML = mdRender(String(p.body || ''));
   trySteamTitles();
   showBlogView('read');
+}
+
+/* 置顶 / 取消置顶 */
+function togglePin(){
+  const p = posts.find(x => x.id === viewPostId);
+  if (!p) return;
+  const next = !p.pinned;
+  setPostFlag(p.id, { pinned: next }).then(() => {
+    openPost(viewPostId);
+    renderBlogList(); renderDrafts();
+    toast(next ? '已置顶，列表里排最前' : '已取消置顶');
+  }).catch(err => toast('操作失败：' + err.message));
+}
+
+/* 开放 / 关闭分享 */
+function toggleShareable(){
+  const p = posts.find(x => x.id === viewPostId);
+  if (!p) return;
+  const next = (p.shareable === false);   /* 当前关着 → 要开 */
+  setPostFlag(p.id, { shareable: next }).then(() => {
+    /* 关掉分享时如果分享面板正开着，顺手关掉免得尴尬 */
+    if (!next) closeShare();
+    openPost(viewPostId);
+    renderBlogList(); renderDrafts();
+    toast(next ? '已开放分享' : '已关闭分享，别人看不到分享按钮了');
+  }).catch(err => toast('操作失败：' + err.message));
 }
 
 /* 阅读页改状态：点一下就切，不用回草稿箱 */
@@ -4330,6 +4446,10 @@ $('#vDelete').addEventListener('click', () => {
     }).catch(err => toast('删除失败：' + err.message));
   }
 });
+
+/* ---- 置顶 / 可分享 ---- */
+$('#vPin').addEventListener('click', togglePin);
+$('#vShareToggle').addEventListener('click', toggleShareable);
 
 /* ---- 分享 ---- */
 $('#vShare').addEventListener('click', () => openShare(viewPostId));
