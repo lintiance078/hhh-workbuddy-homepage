@@ -3086,6 +3086,76 @@ const WS_ZH_FALLBACK = {
   'earth': '地球', 'venus': '金星', 'deimos': '火卫二',
 };
 
+/* ---- 长句兜底：短语表 ----
+   为什么需要这张表？因为官方中文表(translation.json)是**整句精确匹配**的，
+   而午夜电波/警报的文案经常跟官方词条差一两个字，一差就查不到：
+     "Complete 8 zones in Elite Sanctuary Onslaught"  vs 官方 "…zones of …"
+     "Survive for over 20 minutes in Kuva survival"   vs 官方只有 30/60 分钟版
+   ⚠️ 顺序有意义：长的放前面，先替换掉长短语再处理短词，
+      否则 "Kuva survival" 会被拆成 Kuva + survival 分别替换。 */
+const WS_PHRASES = [
+  ['elite sanctuary onslaught', '精英圣殿突袭'],
+  ['sanctuary onslaught',       '圣殿突袭'],
+  ['kuva survival',             '赤毒生存'],
+  ['kuva fortress',             '赤毒要塞'],
+  ['orb vallis',                '奥布山谷'],
+  ['cambion drift',             '魔胎之境'],
+  ['k-drive race',              'K式悬浮板竞速'],
+  ['k-drive',                   'K式悬浮板'],
+  ['life support',              '维生装置'],
+  ['primary weapon',            '主要武器'],
+  ['eximus enemies',            '卓越者'],
+  ['energy orbs',               '能量球'],
+  ['viral damage',              '病毒伤害'],
+  ['eximus',                    '卓越者'],
+  /* 星球和地名：句子里的 Venus/Deimos 得能翻出来 */
+  ['cambion drift on deimos',   '火卫二魔胎之境'],
+  ['orb vallis on venus',       '金星的奥布山谷'],
+  ['venus', '金星'], ['deimos', '火卫二'], ['earth', '地球'],
+  ['mars', '火星'], ['lua', '月球'], ['void', '虚空'],
+  ['jupiter', '木星'], ['saturn', '土星'], ['neptune', '海王星'],
+  ['pluto', '冥王星'], ['mercury', '水星'], ['ceres', '谷神星'],
+  ['eris', '阋神星'], ['sedna', '赛德娜'], ['uranus', '天王星'],
+  ['europa', '欧罗巴'], ['phobos', '火卫一'],
+];
+
+/* 词表：整句查不到时按词逐个查。
+   只收录"确定不会译错"的词——拿不准的宁可留英文，也别瞎翻。 */
+const WS_WORDS = {
+  'kill': '击杀', 'complete': '完成', 'survive': '生存', 'pick up': '拾取',
+  'defeat': '击败', 'collect': '收集', 'use': '使用', 'find': '找到',
+  'scan': '扫描', 'craft': '制造', 'equip': '装备', 'play': '进行',
+  'enemies': '敌人', 'enemy': '敌人', 'missions': '任务', 'mission': '任务',
+  'zones': '个区域', 'zone': '个区域', 'waves': '波', 'wave': '波',
+  'minutes': '分钟', 'minute': '分钟', 'hours': '小时', 'hour': '小时',
+  'seconds': '秒', 'orbs': '能量球', 'orb': '能量球',
+  'with': '使用', 'without': '不使用', 'using': '使用',
+  'over': '超过', 'more than': '超过', 'at least': '至少',
+  'in': '·', 'on': '·', 'of': '的', 'while': '时', 'during': '期间',
+  'primary': '主要', 'secondary': '次要', 'melee': '近战',
+  'weapon': '武器', 'weapons': '武器', 'warframe': '战甲', 'companion': '同伴',
+  'racing': '竞速', 'race': '竞速', 'riding': '骑乘',
+  'playing': '游玩', 'defense': '防御', 'survival': '生存',
+  'of over': '超过', 'and': '和', 'or': '或', 'any': '任意', 'all': '全部',
+  'conclave': '武形秘仪', 'simaris': '西马里斯的', 'cephalon': '中枢',
+  /* 冠词/介词：中文里没有对应物，直接删掉最干净 */
+  'the': '', 'a': '', 'an': '', 'for': '', 'to': '', 'at': '', 'by': '',
+};
+
+/* 警报奖励的前缀：这几个是活动/主题名，官方表里常缺 */
+const WS_PREFIX_ZH = {
+  'conquera': '征服者',
+};
+
+/* 物品名尾巴：官方表里这几个词单独查得到，但组合起来查不到。
+   "Conquera Kuaka Floof" = 征服者 + 库阿卡 + 玩偶 */
+const WS_TAIL_ZH = {
+  'floof': '玩偶', 'floofs': '玩偶',
+  'kuaka': '库阿卡', 'sawgaw': '锯鸫', 'virmink': '维尔明克',
+  'condroc': '秃鹫', 'pobber': '波伯', 'bolarola': '博拉罗拉',
+  'horrasque': '恐棘兽', 'stover': '斯托弗',
+};
+
 /* 星球名：把接口的 "Sedna/Naga" 拆成 [星球, 节点] 分别翻 */
 const WS_PLANETS = {
   'mercury': '水星', 'venus': '金星', 'earth': '地球', 'mars': '火星',
@@ -3109,6 +3179,88 @@ function wsT(s){
   const k = String(s).toLowerCase();
   return wsZn[k] || WS_ZH_FALLBACK[k] || s;
 }
+
+/* ---- 长句翻译（午夜电波 / 警报奖励这类整句文案）----
+   三级降级，命中越靠前质量越好：
+     ① 整句查官方表      → "使用病毒伤害击杀150名敌人"（最好）
+     ② 短语表替换长词组  → 先把 "Elite Sanctuary Onslaught" 整体换掉
+     ③ 剩下的按词逐个查  → 拼成"完成8个区域·精英圣殿突袭"
+   全都查不到就返回原文，不硬翻。
+   ⚠️ 只有当三级下来"至少换掉一个词"时才算成功，否则不如保持英文原句。 */
+function wsTSentence(s){
+  if (!s) return '';
+  const raw = String(s).trim();
+  const low = raw.toLowerCase();
+
+  /* ① 整句命中（官方表里同样按小写索引） */
+  const whole = wsZn[low] || WS_ZH_FALLBACK[low];
+  if (whole) return whole;
+
+  /* ② 短语表：用占位符替换，避免短语内部被后面按词替换时拆散 */
+  let text = raw;
+  const holds = [];
+  WS_PHRASES.forEach(([en, cn]) => {
+    const re = new RegExp(en.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+    text = text.replace(re, () => {
+      holds.push(cn);
+      return '\u0000' + (holds.length - 1) + '\u0000';
+    });
+  });
+
+  /* ③ 剩下按词查。长的词先试（"pick up" 要优先于 "up"） */
+  const words = Object.keys(WS_WORDS).sort((a, b) => b.length - a.length);
+  let changed = holds.length > 0;
+  words.forEach(en => {
+    const re = new RegExp('\\b' + en.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b', 'gi');
+    text = text.replace(re, () => { changed = true; return WS_WORDS[en]; });
+  });
+
+  /* 还原占位符 */
+  text = text.replace(/\u0000(\d+)\u0000/g, (_, i) => holds[+i]);
+
+  if (!changed) return raw;                 /* 一个词都没翻，保持原文 */
+  /* 清理（顺序有讲究）：
+     1. · 两侧统一成 " · "
+     2. "和/或" 这类连接词前后补空格，别粘在名词上
+     3. 拉丁字母/数字 与中文之间补空格（读起来舒服）
+     4. 收尾压缩。⚠️ 不要做"中文之间去空格"——那会把第 2 步刚加的空格吃掉 */
+  return text.replace(/\s*·\s*/g, ' · ')
+             .replace(/([\u4e00-\u9fa5])(和|或|及)(?=[\u4e00-\u9fa5])/g, '$1 $2 ')
+             .replace(/([\u4e00-\u9fa5])([A-Za-z0-9])/g, '$1 $2')
+             .replace(/([A-Za-z0-9])([\u4e00-\u9fa5])/g, '$1 $2')
+             .replace(/\s{2,}/g, ' ')
+             .trim();
+}
+
+/* 物品名兜底：Conquera Kuaka Floof 这种"活动前缀 + 物品名"结构。
+   前缀查本地小表，物品名照常走 wsT（Floof → 玩偶 官方表里有）。 */
+function wsItemName(s){
+  if (!s) return '';
+  const raw = String(s).trim();
+  const hit = wsT(raw);
+  if (hit !== raw) return hit;              /* 整名查到了，直接用 */
+
+  const parts = raw.split(/\s+/);
+  if (parts.length < 2) return wsTSentence(raw);
+
+  /* ① 逐词翻：每个词先查活动前缀 → 官方表 → 物品尾巴表
+        例："Conquera Kuaka Floof" → 征服者 库阿卡 玩偶
+        只要有超过一半的词翻出来了就认为成功（剩下的保持英文） */
+  let ok = 0;
+  const out = parts.map(w => {
+    const k = w.toLowerCase();
+    if (WS_PREFIX_ZH[k]) { ok++; return WS_PREFIX_ZH[k]; }
+    if (WS_TAIL_ZH[k])   { ok++; return WS_TAIL_ZH[k]; }
+    const t = wsT(w);
+    if (t !== w) { ok++; return t; }
+    return w;
+  });
+  if (ok >= 2 || (ok === parts.length && ok > 0)) return out.join(' ');
+
+  /* ② 逐词不成，退回整句降级（能翻多少算多少） */
+  return wsTSentence(raw);
+}
+
 /* 地点："Sedna/Naga" → 主标题「赛德娜 / 娜迦」+ 副标题「Sedna/Naga」 */
 function wsPlaceParts(loc){
   if (!loc) return { cn: '', en: '' };
@@ -3482,12 +3634,25 @@ function wsModuleBody(key){
     arr.forEach(se => {
       (se.challenges || []).forEach(c => {
         const desc = (c.description || c.title || '').trim();
-        /* 官方表里"挑战说明"也是按英文原文索引的，能查到就显示中文。
-           实测命中率约一半，查不到就保持英文，不硬翻。 */
-        const cn = wsZn[desc.toLowerCase()];
-        const isPlaceholder = /^unknown challenge/i.test(desc);
-        const show = isPlaceholder ? desc : (cn || desc);
-        html += wsItem(show, cn && cn !== desc ? desc : '', [
+        /* 三级降级翻译（整句 → 短语 → 逐词），见 wsTSentence 的注释。
+           界面显示中文，副标题保留英文原文。 */
+        const cn = wsTSentence(desc);
+        /* ⚠️ DE 偶尔会漏配文案，接口里甩过来的是内部代码（如
+           "SeasonWeeklyCompleteRace"、"Unknown challenge"）。
+           这种东西翻不出来，原文摆给用户看也很莫名 —— 换成一句人话，
+           把原始代码降级成副标题，方便对不上时能回头查。
+           判定：出现 Unknown / 全驼峰无空格 / 已知的内部代码词。 */
+        const isCode = /unknown/i.test(desc)
+                       || /^[A-Za-z]+([A-Z][a-z]+)+$/.test(desc)
+                       || /^(season|weekly|daily|challenge)[A-Za-z]*$/i.test(desc);
+        if (isCode){
+          html += wsItem('午夜电波任务（官方暂未提供说明）', desc, [
+            [c.daily ? '每日' : '每周', '', c.daily],
+            [String(c.xpAmount || 0) + ' 声望'],
+          ], wsSec(c.end));
+          return;
+        }
+        html += wsItem(cn, cn !== desc ? desc : '', [
           [c.daily ? '每日' : '每周', '', c.daily],
           [String(c.xpAmount || 0) + ' 声望'],
         ], wsSec(c.end));
@@ -3508,7 +3673,13 @@ function wsModuleBody(key){
       if (items.length || (a.rewards && a.rewards.credits)){
         h += '<div class="ws-rew">';
         if (a.rewards.credits){ wsMarkRaw('现金'); h += '<span><b>' + a.rewards.credits.toLocaleString() + '</b> 现金</span>'; }
-        items.forEach(it => { wsMarkRaw(wsT(it.name)); h += '<span><b>' + escHtml(wsT(it.name)) + '</b></span>'; });
+        items.forEach(it => {
+          /* 奖励物品名走 wsItemName：整名查不到时按"前缀 + 物品名"拆开翻，
+             不然 "Conquera Kuaka Floof" 这种会整个留英文。 */
+          const nm = wsItemName(it.name);
+          wsMarkRaw(nm);
+          h += '<span><b>' + escHtml(nm) + '</b></span>';
+        });
         h += '</div>';
       }
       html += h;
@@ -3525,7 +3696,7 @@ function wsModuleBody(key){
         const nm = x.item && x.item.name || '';
         const off = x.originalPrice ? Math.round((1 - x.price / x.originalPrice) * 100) : 0;
         wsMarkRaw('特惠'); wsMarkRaw('库存');
-        parts.push(wsItem('Darvo 每日特惠　' + wsT(nm), nm,
+        parts.push(wsItem('Darvo 每日特惠　' + wsItemName(nm), nm,
           [['-' + off + '%', '', true], [x.price + ' 白金'],
            ['库存 ' + (x.stock || 0) - (x.sold || 0)]], wsSec(x.end)));
       });
