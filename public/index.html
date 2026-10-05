@@ -499,6 +499,66 @@ html[data-layout="wide"] .wrap{max-width:1080px}
 .cmd-item:hover,.cmd-item.sel{background:var(--hover)}
 .cmd-item span{color:var(--muted);font-size:11.5px}
 
+/* ========== 分享面板 ========== */
+.sh-mask{
+  position:fixed;inset:0;z-index:95;background:rgba(0,0,0,.42);
+  display:none;align-items:flex-end;justify-content:center;
+}
+.sh-mask.open{display:flex}
+.sh-box{
+  width:min(420px,100%);background:var(--card);border:1px solid var(--line);
+  border-radius:16px 16px 0 0;padding:16px 16px 22px;
+  box-shadow:0 -6px 28px rgba(0,0,0,.16);animation:shUp .18s ease;
+  max-height:86vh;overflow-y:auto;
+}
+@keyframes shUp{from{transform:translateY(24px);opacity:.4}to{transform:none;opacity:1}}
+.sh-head{
+  display:flex;align-items:center;gap:10px;
+  padding-bottom:11px;border-bottom:1px solid var(--line);margin-bottom:14px;
+}
+.sh-head b{font-size:14px}
+.sh-head .grow{flex:1}
+.sh-close{
+  border:none;background:transparent;color:var(--muted);cursor:pointer;
+  font-size:19px;line-height:1;padding:2px 6px;border-radius:7px;
+}
+.sh-close:hover{background:var(--hover);color:var(--text)}
+/* 图标矩阵 */
+.sh-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-bottom:15px}
+.sh-item{
+  display:flex;flex-direction:column;align-items:center;gap:6px;
+  padding:10px 4px;border:none;background:transparent;cursor:pointer;
+  border-radius:10px;color:var(--text);font-size:11px;font-family:inherit;
+}
+.sh-item:hover{background:var(--hover)}
+.sh-item i{
+  width:40px;height:40px;border-radius:50%;display:flex;
+  align-items:center;justify-content:center;font-style:normal;
+  font-size:17px;color:#fff;flex:none;
+}
+.sh-item svg{width:19px;height:19px}
+.sh-item span{color:var(--muted);white-space:nowrap}
+/* 链接复制区 */
+.sh-link{display:flex;gap:7px;margin-bottom:4px}
+.sh-link input{
+  flex:1;min-width:0;font:inherit;font-size:12px;padding:8px 11px;
+  border:1px solid var(--line);border-radius:9px;background:transparent;
+  color:var(--text);outline:none;
+}
+.sh-link input:focus{border-color:var(--accent)}
+.sh-tip{font-size:11.5px;color:var(--muted);min-height:15px;margin:6px 2px 0}
+.sh-sec-t{
+  font-size:11.5px;color:var(--muted);margin:2px 0 8px;
+}
+
+/* 列表卡片上的分享小按钮 */
+.pc-share{
+  border:none;background:transparent;color:var(--muted);cursor:pointer;
+  padding:4px 7px;border-radius:7px;font-size:12px;font-family:inherit;
+  display:inline-flex;align-items:center;gap:4px;
+}
+.pc-share:hover{background:var(--hover);color:var(--accent)}
+
 /* ========== Toast ========== */
 .toast{
   position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(16px);
@@ -1329,6 +1389,7 @@ body.cur-trail .trail-dot{display:block}
           <button class="btn" id="vBack">返回列表</button>
           <div class="btn-row" style="margin:0">
             <span id="vStatus" class="ed-status"></span>
+            <button class="btn" id="vShare">分享</button>
             <button class="btn need-admin" id="vToDraft">转草稿</button>
             <button class="btn need-admin" id="vToHidden">隐藏</button>
             <button class="btn need-admin" id="vToPub">发布</button>
@@ -1844,6 +1905,25 @@ body.cur-trail .trail-dot{display:block}
 </div>
 
 <div class="toast" id="toast"></div>
+
+<!-- 分享面板：点「分享」从底部弹出 -->
+<div class="sh-mask" id="shMask">
+  <div class="sh-box" role="dialog" aria-label="分享文章">
+    <div class="sh-head">
+      <b>分享这篇文章</b>
+      <span class="grow"></span>
+      <button class="sh-close" id="shClose" title="关闭" aria-label="关闭">×</button>
+    </div>
+    <p class="sh-sec-t">分享到</p>
+    <div class="sh-grid" id="shGrid"></div>
+    <p class="sh-sec-t">文章链接</p>
+    <div class="sh-link">
+      <input id="shUrl" type="text" readonly>
+      <button class="btn primary" id="shCopy">复制</button>
+    </div>
+    <p class="sh-tip" id="shTip"></p>
+  </div>
+</div>
 
 <script>
 'use strict';
@@ -3828,9 +3908,16 @@ function renderBlogList(){
     const date = fmtPostDate(p.updated || p.created);
     const tagsHtml = (p.tags && p.tags.length)
       ? '<div class="pc-tags">' + p.tags.map(t => '<span class="pc-tag">' + escHtml(t) + '</span>').join('') + '</div>' : '';
-    /* 编辑/删除带 need-admin：没登录时由 CSS 藏掉，不给任何可点的入口 */
+    /* 编辑/删除带 need-admin：没登录时由 CSS 藏掉，不给任何可点的入口。
+       「分享」对所有人生效——但草稿/隐藏的文章点了会提示先发布，
+       （见 openShare 里的判断），所以这里统一显示，不加 need-admin。 */
+    const canShare = (p.status || 'published') === 'published';
     const actsHtml =
       '<div class="pc-acts"><button class="btn" data-act="read">阅读</button>' +
+      (canShare ? '<button class="pc-share" data-act="share" title="分享这篇">' +
+        '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+        '<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>' +
+        '<path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/></svg>分享</button>' : '') +
       '<button class="btn need-admin" data-act="edit">编辑</button>' +
       '<button class="btn danger need-admin" data-act="del">删除</button></div>';
     const badge = statusBadge(p);
@@ -3838,6 +3925,7 @@ function renderBlogList(){
       const b = e.target.closest('button');
       if (!b) return;
       if (b.dataset.act === 'read') openPost(p.id);
+      else if (b.dataset.act === 'share') openShare(p.id);
       else if (b.dataset.act === 'edit') openEditor(p.id);
       else if (b.dataset.act === 'del' && confirm('删除《' + p.title + '》？不可恢复')){
         removePost(p.id).then(() => {
@@ -4021,7 +4109,174 @@ function savePost(status){
   });
 }
 
-/* ---- 阅读 ---- */
+/* ═══════════ 分享 ═══════════
+   文章链接长这样：  站点地址/?post=<文章id>
+   之所以用查询参数而不是 #hash：hash 在某些平台转发时会被吃掉，
+   查询参数更稳。启动时会读 ?post= 自动打开对应文章。
+
+   注意：只有已发布的文章才允许生成分享链接。草稿/隐藏的链接
+   别人点开会显示"文章不存在"，等于白分享，索性直接拦住。 */
+
+const SHARE_PLATFORMS = [
+  {
+    id: 'wechat', label: '微信', color: '#07c160',
+    svg: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8.7 3C4.9 3 1.8 5.6 1.8 8.8c0 1.8 1 3.4 2.6 4.5l-.7 2 2.3-1.2c.8.2 1.6.3 2.4.3h.5a5.6 5.6 0 0 1-.2-1.5c0-3.1 3-5.6 6.7-5.6h.5C15.3 4.8 12.3 3 8.7 3zm-2.3 3a.9.9 0 1 1 0 1.8.9.9 0 0 1 0-1.8zm4.6 0a.9.9 0 1 1 0 1.8.9.9 0 0 1 0-1.8z"/><path d="M22.2 13c0-2.7-2.6-4.8-5.8-4.8s-5.8 2.1-5.8 4.8 2.6 4.8 5.8 4.8c.7 0 1.3-.1 1.9-.3l1.9 1-.5-1.7c1.5-.9 2.5-2.3 2.5-3.8zm-7.7-1.4a.75.75 0 1 1 0 1.5.75.75 0 0 1 0-1.5zm3.8 0a.75.75 0 1 1 0 1.5.75.75 0 0 1 0-1.5z"/></svg>'
+  },
+  {
+    id: 'qq', label: 'QQ', color: '#12b7f5',
+    svg: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2c3.3 0 5.6 2.4 5.6 5.5 0 .9.3 1.6.9 2.5 1 1.4 1.6 2.7 1.9 4 .4 1.7-.6 2.4-1.7 2.1-.5-.1-.9-.5-1.2-1-.7 1.3-1.9 2.2-3.3 2.6.4.2.7.5.7.9 0 .6-.9 1-2.9 1s-2.9-.4-2.9-1c0-.4.3-.7.7-.9-1.4-.4-2.6-1.3-3.3-2.6-.3.5-.7.9-1.2 1-1.1.3-2.1-.4-1.7-2.1.3-1.3.9-2.6 1.9-4 .6-.9.9-1.6.9-2.5C6.4 4.4 8.7 2 12 2z"/></svg>'
+  },
+  {
+    id: 'weibo', label: '微博', color: '#e6162d',
+    svg: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M9.8 20.2c-3.9 0-7.1-1.8-7.1-4.1 0-1.2.8-2.6 2.2-3.8 1.8-1.5 3.9-2.3 5.2-1.8.6.2.7.9.4 1.7-.1.4.1.6.5.4 1.9-.8 3.6-.9 4.2.2.3.6.2 1.3-.2 2.1-.2.4 0 .6.4.7 1.4.5 2.1 1.3 1.8 2.5-.4 1.6-2.9 2.1-7.4 2.1zm-.6-2.6c-2.4.2-4.4-.9-4.5-2.4-.1-1.5 1.8-2.9 4.2-3.1 2.4-.2 4.4.9 4.5 2.4.1 1.5-1.8 2.9-4.2 3.1zm-1.3-1.9c-.8.1-1.5-.3-1.6-.9-.1-.6.5-1.1 1.3-1.2.8-.1 1.5.3 1.6.9.1.6-.5 1.1-1.3 1.2z"/><path d="M17.7 3.4c.9-.2 1.9 0 2.7.6.8.6 1.2 1.5 1.3 2.4l-1.2.2c-.1-.6-.4-1.2-.9-1.6-.5-.4-1.2-.5-1.8-.4zm.4 2.3c.4-.1.8 0 1.1.2.3.2.5.5.5.9l-1.2.2c0-.2-.1-.3-.2-.4-.1-.1-.3-.1-.4-.1z"/></svg>'
+  },
+  {
+    id: 'twitter', label: 'X', color: '#000000',
+    svg: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.5 3h3l-6.6 7.5L21.7 21h-6l-4.7-6.1L5.6 21h-3l7-8L2.6 3h6.2l4.2 5.6L17.5 3zm-1.1 16h1.7L7.7 4.7H5.9L16.4 19z"/></svg>'
+  },
+  {
+    id: 'telegram', label: 'Telegram', color: '#2aabee',
+    svg: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M21.9 4.3 18.9 19c-.2 1-.8 1.3-1.7.8l-4.6-3.4-2.2 2.1c-.2.2-.5.5-.9.5l.3-4.6 8.4-7.6c.4-.3-.1-.5-.6-.2L7.3 12.7l-4.4-1.4c-1-.3-1-1 .2-1.4l17-6.6c.8-.3 1.5.2 1.2 1z"/></svg>'
+  },
+  {
+    id: 'copy', label: '复制链接', color: '#6b7280',
+    svg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>'
+  },
+  {
+    id: 'native', label: '更多', color: '#5b7a99',
+    svg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/><circle cx="5" cy="12" r="1.6"/></svg>'
+  }
+];
+
+let sharePostId = '';
+
+/* 拼出文章的直链。
+   线上： https://站点/index.html?post=xxx （或 /?post=xxx）
+   本地： file:// 协议下没有可分享的地址，退回相对路径 ?post=xxx */
+function postUrl(id){
+  const q = '?post=' + encodeURIComponent(id);
+  if (typeof location === 'undefined' || location.protocol === 'file:') return q;
+  return location.origin + location.pathname + q;
+}
+
+function shareUrlOf(id, platform, title){
+  const u = postUrl(id);
+  const t = title || '';
+  switch (platform){
+    case 'qq':       return 'https://connect.qq.com/widget/shareqq/index.html?url=' + encodeURIComponent(u) + '&title=' + encodeURIComponent(t);
+    case 'weibo':    return 'https://service.weibo.com/share/share.php?url=' + encodeURIComponent(u) + '&title=' + encodeURIComponent(t);
+    case 'twitter':  return 'https://twitter.com/intent/tweet?url=' + encodeURIComponent(u) + '&text=' + encodeURIComponent(t);
+    case 'telegram': return 'https://t.me/share/url?url=' + encodeURIComponent(u) + '&text=' + encodeURIComponent(t);
+    default:         return u;
+  }
+}
+
+/* 复制文本：优先用现代 API；http 环境下 navigator.clipboard 不可用，
+   所以留一个 execCommand 兜底，否则分享面板里复制按钮会静默失效。 */
+async function copyText(text){
+  try{
+    if (navigator.clipboard && window.isSecureContext){
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+  }catch(e){}
+  try{
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.setAttribute('readonly', '');
+    ta.style.cssText = 'position:fixed;top:-1000px;opacity:0';
+    document.body.appendChild(ta);
+    ta.select();
+    ta.setSelectionRange(0, ta.value.length);
+    const ok = document.execCommand('copy');
+    ta.remove();
+    return ok;
+  }catch(e){ return false; }
+}
+
+function buildShareGrid(){
+  const grid = $('#shGrid');
+  if (!grid || grid.dataset.built) return;
+  grid.dataset.built = '1';
+  grid.innerHTML = SHARE_PLATFORMS.map(p =>
+    '<button class="sh-item" data-sh="' + p.id + '" type="button">' +
+      '<i style="background:' + p.color + '">' + p.svg + '</i>' +
+      '<span>' + escHtml(p.label) + '</span>' +
+    '</button>').join('');
+}
+
+function openShare(id){
+  const p = posts.find(x => x.id === id);
+  if (!p) return;
+
+  /* 草稿和隐藏文章不给分享——别人点开是 404，分享出去没意义 */
+  const st = p.status || 'published';
+  if (st !== 'published'){
+    toast(st === 'draft' ? '这是草稿，先发布才能分享' : '这篇已隐藏，先发布才能分享');
+    return;
+  }
+
+  sharePostId = id;
+  buildShareGrid();
+
+  const url = postUrl(id);
+  const input = $('#shUrl');
+  if (input) input.value = url;
+  const tip = $('#shTip');
+  if (tip) tip.textContent = '';
+
+  /* 不支持 Web Share 就把「更多」隐藏掉，免得点了没反应 */
+  const nativeBtn = $('#shGrid .sh-item[data-sh="native"]');
+  if (nativeBtn) nativeBtn.style.display = (navigator.share ? '' : 'none');
+
+  $('#shMask').classList.add('open');
+}
+
+function closeShare(){
+  $('#shMask').classList.remove('open');
+  sharePostId = '';
+}
+
+async function doShare(platform){
+  const p = posts.find(x => x.id === sharePostId);
+  if (!p) return;
+  const url = postUrl(p.id);
+  const title = p.title + ' · ' + getName();
+  const tip = $('#shTip');
+
+  if (platform === 'copy'){
+    const done = await copyText(url);
+    if (tip) tip.textContent = done ? '链接已复制，去粘贴给朋友吧' : '复制失败，手动选中上面的链接复制';
+    if (done) toast('链接已复制');
+    return;
+  }
+
+  if (platform === 'native'){
+    try{
+      await navigator.share({ title: p.title, text: p.title, url: url });
+      closeShare();
+    }catch(e){
+      /* 用户取消不算错，不弹提示 */
+      if (e && e.name !== 'AbortError' && tip) tip.textContent = '系统分享没成功，试试复制链接';
+    }
+    return;
+  }
+
+  if (platform === 'wechat'){
+    /* 微信不开放网页分享接口，只能引导用户复制链接 */
+    const done = await copyText(url);
+    if (tip) tip.textContent = done
+      ? '链接已复制 —— 微信里粘贴给朋友或发朋友圈即可'
+      : '复制失败，手动选中上面的链接复制';
+    return;
+  }
+
+  const target = shareUrlOf(p.id, platform, title);
+  window.open(target, '_blank', 'noopener,noreferrer,width=680,height=620');
+}
+
+/* ═══════════ 阅读 ═══════════ */
+
 function openPost(id){
   const p = posts.find(x => x.id === id);
   if (!p) return;
@@ -4073,6 +4328,22 @@ $('#vDelete').addEventListener('click', () => {
       toast('已删除');
     }).catch(err => toast('删除失败：' + err.message));
   }
+});
+
+/* ---- 分享 ---- */
+$('#vShare').addEventListener('click', () => openShare(viewPostId));
+$('#shClose').addEventListener('click', closeShare);
+$('#shMask').addEventListener('click', e => { if (e.target === $('#shMask')) closeShare(); });
+$('#shCopy').addEventListener('click', () => doShare('copy'));
+$('#shGrid').addEventListener('click', e => {
+  const btn = e.target.closest('.sh-item');
+  if (btn) doShare(btn.dataset.sh);
+});
+/* 链接输入框：点一下全选，方便手动复制 */
+$('#shUrl').addEventListener('click', e => e.target.select());
+/* Esc 关闭分享面板 */
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && $('#shMask').classList.contains('open')) closeShare();
 });
 $('#edPublish').addEventListener('click', () => savePost('published'));
 $('#edSaveDraft').addEventListener('click', () => savePost('draft'));
@@ -6300,9 +6571,34 @@ function bindCopy(btnSel, source, okMsg){
   renderStats();
   renderDrafts();
 
+  /* 从分享链接进来：?post=<id> 直接打开那篇文章。
+     要等 posts 加载完才能查，所以必须放在 renderBlogList() 之后。
+     找不到（或对方是访客、这篇没发布）就回首页，别让人对着空白发呆。 */
+  let opened = false;
+  try{
+    const qs = new URLSearchParams(location.search);
+    const pid = qs.get('post');
+    if (pid){
+      const hit = posts.find(x => x.id === pid);
+      if (hit){
+        switchTab('blog');
+        openPost(pid);
+        opened = true;
+      }else{
+        switchTab('blog');
+        toast(MODE.online && !isAdminUser
+          ? '这篇文章不存在，或者作者还没公开'
+          : '找不到这篇文章，可能已被删除');
+        opened = true;   /* 停在博客列表页，也算处理过了 */
+      }
+    }
+  }catch(e){ /* 老浏览器没有 URLSearchParams 就安静跳过 */ }
+
   /* 回到上次看的标签页；但草稿箱这种管理页不做自动恢复，免得别人进来看到 */
-  const last = store.get('tab', 'home');
-  if (last && last !== 'drafts') switchTab(last);
+  if (!opened){
+    const last = store.get('tab', 'home');
+    if (last && last !== 'drafts') switchTab(last);
+  }
 })();
 </script>
 </body>
